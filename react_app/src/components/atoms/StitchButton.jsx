@@ -19,6 +19,21 @@ const StitchButton = styled.button`
     border: dotted 1px #FFF;
   }
   font-family: 'Kaisei Opti', serif;
+
+    /* 📱 スマホサイズ（幅 <= 600px） */
+  @media (max-width: 600px) {
+    width: 80vw;
+  }
+
+  /* 📱 タブレットサイズ（幅 <= 900px） */
+  @media (max-width: 900px) and (min-width: 601px) {
+    width: 60vw;
+  }
+
+  /* 💻 PCサイズ（幅 > 900px） */
+  @media (min-width: 901px) {
+    width: 30vw;
+  }
 `;
 
 export default StitchButton;
