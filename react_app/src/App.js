@@ -3,15 +3,22 @@ import './App.css';
 import StitchButton from './components/atoms/StitchButton';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Login from './components/modules/Login';
-import GlobalWrapper from './GlobalWrapper';
 import Header from './components/modules/Header';
 function Home() {
   const navigate = useNavigate();
   return (
-    <GlobalWrapper>
-      <img src={logo} className="App-logo" alt="logo" style={{ marginBottom: "32px" }} />
+    <>
+      <img
+        src={logo}
+        className="App-logo"
+        alt="logo"
+        style={{
+          display: 'block',          // 中央揃えに必要
+          margin: '40px auto 32px', // 上:40px, 下:32px, 左右:autoで中央揃え
+        }}
+      />
       <StitchButton onClick={() => navigate('/login')}>ログイン</StitchButton>
-    </GlobalWrapper>
+    </>
   );
 }
 

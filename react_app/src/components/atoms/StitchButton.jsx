@@ -1,7 +1,10 @@
 import styled from "styled-components";
 
 const StitchButton = styled.button`
-  display: inline-block;
+  display: block;
+  width: 50vw;         
+  margin: 0 auto;
+  margin-bottom: 80px;
   padding: 0.5em 2.5em;
   text-decoration: none;
   background: #668ad8;
