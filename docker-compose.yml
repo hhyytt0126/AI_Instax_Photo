@@ -1,11 +1,14 @@
 version: '3.8'
 services:
-   node:
-     build:
-       context: .
-       dockerfile: Dockerfile
-     volumes:
-      - ./:/usr/src/app
-     command: sh -c "cd react_app && yarn start"
-     ports:
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: yarn start
+    ports:
       - "3000:3000"
+    volumes:
+      # 「react_app」フォルダを /usr/src/app にマウント
+      - ./react_app:/usr/src/app
+      # node_modules はコンテナ内に残す（ホストと共有しない）
+      - /usr/src/app/node_modules
