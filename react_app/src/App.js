@@ -4,6 +4,8 @@ import StitchButton from './components/atoms/StitchButton';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Login from './components/modules/Login';
 import Header from './components/modules/Header';
+import Camera from './components/modules/Camera';
+
 function Home() {
   const navigate = useNavigate();
   return (
@@ -30,6 +32,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/camera" element={<Camera />} />
         </Routes>
       </BrowserRouter>
     </>

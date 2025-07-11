@@ -1,6 +1,6 @@
 import React from "react";
 import LoginForm from "../blocks/LoginForm";
-function Register() {
+function Login() {
   return (
     <>
      <LoginForm />   
@@ -8,4 +8,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;
