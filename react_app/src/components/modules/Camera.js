@@ -29,7 +29,7 @@ function Camera() {
       });
       setTokenClient(client);
     }
-  }, []);
+  }, [tokenClient]);
 
   const handleLogin = () => {
     if (tokenClient) {
