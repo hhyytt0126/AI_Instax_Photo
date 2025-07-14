@@ -1,28 +1,11 @@
-import logo from './logo.svg';
 import './App.css';
-import StitchButton from './components/atoms/StitchButton';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route} from 'react-router-dom';
 import Login from './components/modules/Login';
+import PC from './components/modules/PC';
 import Header from './components/modules/Header';
 import Camera from './components/modules/Camera';
+import Home from './Home';
 
-function Home() {
-  const navigate = useNavigate();
-  return (
-    <>
-      <img
-        src={logo}
-        className="App-logo"
-        alt="logo"
-        style={{
-          display: 'block',          // 中央揃えに必要
-          margin: '40px auto 32px', // 上:40px, 下:32px, 左右:autoで中央揃え
-        }}
-      />
-      <StitchButton onClick={() => navigate('/login')}>ログイン</StitchButton>
-    </>
-  );
-}
 
 function App() {
   return (
@@ -33,6 +16,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/camera" element={<Camera />} />
+          <Route path="/pc" element={<PC />} />
         </Routes>
       </BrowserRouter>
     </>
