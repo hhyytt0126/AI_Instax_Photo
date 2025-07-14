@@ -1,34 +1,79 @@
-import React, { useState } from "react";
-import StitchButton from "../atoms/StitchButton";
+import React, { useEffect, useState } from "react";
 import uploadPhoto from "../utils/uploadPhoto";
+import generateQRCode from "../utils/generateQRCode";
+import { createDriveSubFolder, uploadImageToDrive } from "../utils/googleDriveUtils";
+import StitchButton from "../atoms/StitchButton";
+
+const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
 
 function Camera() {
-  // 選択された画像のプレビューURLを保持するためのstate
+  const [accessToken, setAccessToken] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
+
+  const [tokenClient, setTokenClient] = useState(null);
+
+  useEffect(() => {
+    // Google Identity Services クライアントを初期化
+    if (window.google && !tokenClient) {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/drive.file",
+        callback: (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            setAccessToken(tokenResponse.access_token);
+            console.log("✅ Googleログイン成功");
+          }
+        },
+      });
+      setTokenClient(client);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    if (tokenClient) {
+      tokenClient.requestAccessToken();
+    }
+  };
 
   const handleTakePhoto = () => {
-    // uploadPhotoを呼び出す際に、画像が選択された後の処理を渡す
-    uploadPhoto((dataUrl) => {
-      // uploadPhoto.jsから受け取ったデータURLをstateにセットする
+    if (!accessToken) {
+      alert("先にGoogleログインしてください。");
+      return;
+    }
+
+    uploadPhoto(async (dataUrl) => {
       setImagePreviewUrl(dataUrl);
+
+      try {
+        const newFolderName = `Upload_${Date.now()}`;
+        const subFolderId = await createDriveSubFolder(PARENT_FOLDER_ID, newFolderName, accessToken);
+        await uploadImageToDrive(subFolderId, dataUrl, accessToken);
+        const qr = await generateQRCode(subFolderId);
+        setQrCodeUrl(qr);
+      } catch (err) {
+        console.error("アップロードエラー:", err);
+        alert("アップロードに失敗しました");
+      }
     });
   };
 
   return (
     <div>
-      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>写真をアップロードしてね！</h1>
-      <StitchButton onClick={handleTakePhoto}>写真を撮る</StitchButton>
+      <h1>写真をアップロードしてね！</h1>
 
-      {/* imagePreviewUrlが存在する場合にのみ、画像とプレビュータイトルを表示する */}
+      {!accessToken ? (
+        <StitchButton onClick={handleLogin}>Googleにログイン</StitchButton>
+      ) : (
+        <StitchButton onClick={handleTakePhoto}>写真を撮る</StitchButton>
+      )}
+
       {imagePreviewUrl && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>プレビュー</h3>
-          <img
-            src={imagePreviewUrl}
-            alt="選択された画像のプレビュー"
-            style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px' }}
-          />
-        </div>
+        <img src={imagePreviewUrl} alt="preview" style={{ maxWidth: "100%", marginTop: "20px" }} />
+      )}
+      {qrCodeUrl && (
+        <img src={qrCodeUrl} alt="QR Code" style={{ maxWidth: "200px", marginTop: "20px" }} />
       )}
     </div>
   );

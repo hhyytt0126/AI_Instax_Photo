@@ -12,3 +12,10 @@ services:
       - ./react_app:/usr/src/app
       # node_modules はコンテナ内に残す（ホストと共有しない）
       - /usr/src/app/node_modules
+  
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
