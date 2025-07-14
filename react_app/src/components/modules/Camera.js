@@ -1,12 +1,41 @@
 import React, { useEffect, useState } from "react";
 import uploadPhoto from "../utils/uploadPhoto";
 import generateQRCode from "../utils/generateQRCode";
-import { createDriveSubFolder, uploadImageToDrive } from "../utils/googleDriveUtils";
+import {
+  createDriveSubFolder,
+  uploadImageToDrive,
+  initializeGapi // 追加！
+} from "../utils/googleDriveUtils";
+
 import StitchButton from "../atoms/StitchButton";
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
+const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 
+const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+
+export async function initializeGapi() {
+  return new Promise((resolve, reject) => {
+    if (window.gapi === undefined) {
+      reject(new Error("GAPI not loaded"));
+      return;
+    }
+
+    window.gapi.load("client", async () => {
+      try {
+        await window.gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+        });
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
 function Camera() {
   const [accessToken, setAccessToken] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
@@ -47,6 +76,8 @@ function Camera() {
       setImagePreviewUrl(dataUrl);
 
       try {
+        await initializeGapi();
+        
         const newFolderName = `Upload_${Date.now()}`;
         const subFolderId = await createDriveSubFolder(PARENT_FOLDER_ID, newFolderName, accessToken);
         await uploadImageToDrive(subFolderId, dataUrl, accessToken);
