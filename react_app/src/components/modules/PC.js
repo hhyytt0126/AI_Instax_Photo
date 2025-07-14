@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { FolderOpen, FileText, RefreshCw, LogOut, Shield } from 'lucide-react';
+import { FolderOpen,  RefreshCw, LogOut, Shield } from 'lucide-react';
 import '../css/PC.css';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -101,23 +101,6 @@ function PC() {
     setSubfolderContents({});
   };
 
-  const getFileIcon = (mimeType) =>
-    mimeType.includes('folder') ? (
-      <FolderOpen className="file-icon file-icon-folder" />
-    ) : (
-      <FileText className="file-icon file-icon-file" />
-    );
-
-  const getFileTypeLabel = (mimeType) => {
-    if (mimeType.includes('folder')) return 'フォルダ';
-    if (mimeType.includes('document')) return 'ドキュメント';
-    if (mimeType.includes('spreadsheet')) return 'スプレッドシート';
-    if (mimeType.includes('presentation')) return 'プレゼンテーション';
-    if (mimeType.includes('image')) return '画像';
-    if (mimeType.includes('video')) return '動画';
-    if (mimeType.includes('audio')) return '音声';
-    return 'ファイル';
-  };
 
   const renderFiles = (filesList) => (
     <ul className="folder-list">
