@@ -1,7 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
   "builds": [
     {
       "src": "react_app/package.json",
@@ -9,10 +6,7 @@
       "config": { "distDir": "react_app/build" }
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "react_app/build/index.html"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
