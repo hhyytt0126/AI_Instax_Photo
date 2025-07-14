@@ -29,7 +29,7 @@ export async function initializeGapi() {
 }
 
 // Google Driveにフォルダを作成する
-export async function createDriveSubFolder(parentFolderId, folderName, accessToken) {
+export async function createDriveSubFolder(parentFolderId, folderName) {
   if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
 
   const response = await window.gapi.client.drive.files.create({
@@ -39,7 +39,6 @@ export async function createDriveSubFolder(parentFolderId, folderName, accessTok
       parents: [parentFolderId],
     },
     fields: "id",
-    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   return response.result.id;

@@ -11,9 +11,9 @@ import StitchButton from "../atoms/StitchButton";
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
-const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+//const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 
-const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+//const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 
 function Camera() {
   const [accessToken, setAccessToken] = useState(null);
@@ -56,7 +56,9 @@ function Camera() {
 
       try {
         await initializeGapi();
-
+        console.log("✅ GAPI初期化成功");
+        window.gapi.client.setToken({ access_token: accessToken }); 
+        console.log(accessToken)
         const newFolderName = `Upload_${Date.now()}`;
         const subFolderId = await createDriveSubFolder(PARENT_FOLDER_ID, newFolderName, accessToken);
         await uploadImageToDrive(subFolderId, dataUrl, accessToken);
