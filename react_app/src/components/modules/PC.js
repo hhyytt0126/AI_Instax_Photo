@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { FolderOpen, FileText, RefreshCw, LogOut, Shield } from 'lucide-react';
+import { FolderOpen,  RefreshCw, LogOut, Shield } from 'lucide-react';
 import '../css/PC.css';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
