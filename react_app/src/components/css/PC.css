@@ -1,3 +1,6 @@
+/* PC.css */
+
+/* ベースレイアウト */
 .app-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f0f8ff 0%, #e0e7ff 100%);
@@ -58,6 +61,7 @@
   cursor: pointer;
   border: none;
   text-decoration: none;
+  font-size: 0.875rem;
 }
 
 .btn:disabled {
@@ -96,6 +100,18 @@
 
 .btn-refresh:disabled {
   background-color: #10b981;
+}
+
+.btn-download {
+  background-color: #8b5cf6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.btn-download:hover {
+  background-color: #7c3aed;
 }
 
 /* ヘッダー */
@@ -245,40 +261,72 @@
   display: block;
 }
 
-/* ファイルグリッド */
-.files-grid {
-  display: grid;
-  gap: 0.75rem;
+/* フォルダ構造 */
+.folder-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.file-item {
+.folder-list li {
+  margin-bottom: 0.5rem;
+}
+
+.folder-toggle {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.file-item:hover {
+  width: 100%;
+  padding: 0.75rem;
   background-color: #f3f4f6;
-}
-
-.file-info {
-  flex: 1;
-}
-
-.file-name {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
   font-weight: 500;
-  color: #111827;
-  margin: 0 0 0.25rem 0;
+  color: #374151;
+  transition: all 0.2s ease-in-out;
+  text-align: left;
 }
 
-.file-type {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
+.folder-toggle:hover {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.folder-toggle:active {
+  transform: translateY(1px);
+}
+
+.folder-children {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid #e5e7eb;
+}
+
+.folder-children .folder-list {
+  margin-top: 0.5rem;
+}
+
+.file-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.file-entry:hover {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.file-entry span {
+  color: #374151;
+  font-weight: 500;
+  flex: 1;
 }
 
 /* フッター */
@@ -292,6 +340,57 @@
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
+}
+
+/* ネストされたフォルダのスタイル */
+.folder-children .folder-toggle {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.folder-children .folder-toggle:hover {
+  background-color: #f1f5f9;
+}
+
+.folder-children .file-entry {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.folder-children .file-entry:hover {
+  background-color: #f1f5f9;
+}
+
+/* 深いネストレベル用の追加スタイル */
+.folder-children .folder-children {
+  margin-left: 1rem;
+  border-left-color: #cbd5e1;
+}
+
+.folder-children .folder-children .folder-toggle {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.folder-children .folder-children .folder-toggle:hover {
+  background-color: #e2e8f0;
+}
+
+.folder-children .folder-children .file-entry {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.folder-children .folder-children .file-entry:hover {
+  background-color: #e2e8f0;
+}
+
+/* フォルダ展開アイコンのスタイル */
+.folder-toggle::before {
+  content: '';
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 /* レスポンシブデザイン */
@@ -322,6 +421,21 @@
     width: 100%;
     justify-content: center;
   }
+  
+  .folder-children {
+    margin-left: 1rem;
+  }
+  
+  .file-entry {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .btn-download {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -332,8 +446,13 @@
     border-radius: 0;
   }
   
-  .file-item {
-    padding: 0.75rem;
+  .folder-toggle {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .file-entry {
+    padding: 0.5rem;
   }
   
   .files-content {
@@ -343,4 +462,58 @@
   .files-header {
     padding: 1rem;
   }
+  
+  .folder-children {
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+  }
+}
+
+/* アニメーション効果 */
+.folder-children {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* フォーカス状態 */
+.folder-toggle:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* 選択状態のスタイル */
+.folder-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ダウンロードボタンのホバー効果 */
+.btn-download:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* 階層の深さに応じた視覚的効果 */
+.folder-children::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #3b82f6, transparent);
 }
