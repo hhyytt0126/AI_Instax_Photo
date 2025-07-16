@@ -33,3 +33,68 @@
     transform: rotate(360deg);
   }
 }
+
+
+.spinner-container {
+  position: fixed;              /* ← 画面に固定 */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* ← 完全に中央に配置 */
+  width: 300px;
+  height: 300px;
+  perspective: 1000px;
+  z-index: 10000; /* ← 前面に表示 */
+}
+
+.spinner-flip {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: flip 1.5s linear infinite;
+}
+
+.spinner-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-front,
+.spinner-back {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.spinner-front img,
+.spinner-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spinner-back {
+  transform: rotateY(180deg);
+}
+
+@keyframes flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+#fullOverlay{
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(100, 100, 100, .8);
+  z-index: 2147483647;
+}

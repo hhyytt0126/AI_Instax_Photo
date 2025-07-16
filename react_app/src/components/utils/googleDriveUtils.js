@@ -1,60 +1,86 @@
-// src/components/utils/googleDriveUtils.js
-/* global gapi */
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+// googleDriveUtils.js
 
-export async function initGoogleAPI(clientId, apiKey) {
+const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+
+// GAPI初期化関数
+export async function initializeGapi() {
   return new Promise((resolve, reject) => {
-    gapi.load('client:auth2', async () => {
+    if (window.gapi === undefined) {
+      reject(new Error("GAPI not loaded"));
+      return;
+    }
+
+    window.gapi.load("client", async () => {
       try {
-        await gapi.client.init({
-          apiKey,
-          clientId,
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-          scope: SCOPES,
+        await window.gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
         });
         resolve();
-      } catch (err) {
-        reject(err);
+      } catch (e) {
+        reject(e);
       }
     });
   });
 }
 
 export async function createDriveSubFolder(parentFolderId, folderName) {
-  const res = await gapi.client.drive.files.create({
+  if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
+
+  // フォルダ作成
+  const response = await window.gapi.client.drive.files.create({
     resource: {
       name: folderName,
-      mimeType: 'application/vnd.google-apps.folder',
+      mimeType: "application/vnd.google-apps.folder",
       parents: [parentFolderId],
     },
-    fields: 'id',
+    fields: "id",
   });
-  return res.result.id;
+
+  const folderId = response.result.id;
+
+  // 「リンクを知っている人が閲覧可」にする
+  await window.gapi.client.drive.permissions.create({
+    fileId: folderId,
+    resource: {
+      role: "reader",
+      type: "anyone",
+    },
+  });
+
+  return folderId;
 }
 
-export async function uploadImageToDrive(folderId, base64DataUrl) {
-  const byteString = atob(base64DataUrl.split(',')[1]);
-  const byteArray = new Uint8Array(byteString.length);
+// データURLの画像をGoogle Driveにアップロード
+export async function uploadImageToDrive(folderId, dataUrl, accessToken, imgName = null) {
+  if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
+
+  const byteString = atob(dataUrl.split(",")[1]);
+  const mimeString = dataUrl.split(",")[0].split(":")[1].split(";")[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) {
-    byteArray[i] = byteString.charCodeAt(i);
+    ia[i] = byteString.charCodeAt(i);
   }
-  const blob = new Blob([byteArray], { type: 'image/png' });
+  const blob = new Blob([ab], { type: mimeString });
 
   const metadata = {
-    name: `photo_${Date.now()}.png`,
-    mimeType: 'image/png',
+    name: `${imgName == null ? Date.now() : imgName}.png`,
+    mimeType: mimeString,
     parents: [folderId],
   };
 
   const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', blob);
+  form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+  form.append("file", blob);
 
-  const accessToken = gapi.auth.getToken().access_token;
-
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-    method: 'POST',
-    headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
+  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", {
+    method: "POST",
+    headers: new Headers({ Authorization: `Bearer ${accessToken}` }),
     body: form,
   });
 
