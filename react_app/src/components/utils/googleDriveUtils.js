@@ -28,10 +28,10 @@ export async function initializeGapi() {
   });
 }
 
-// Google Driveにフォルダを作成する
 export async function createDriveSubFolder(parentFolderId, folderName) {
   if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
 
+  // フォルダ作成
   const response = await window.gapi.client.drive.files.create({
     resource: {
       name: folderName,
@@ -41,11 +41,22 @@ export async function createDriveSubFolder(parentFolderId, folderName) {
     fields: "id",
   });
 
-  return response.result.id;
+  const folderId = response.result.id;
+
+  // 「リンクを知っている人が閲覧可」にする
+  await window.gapi.client.drive.permissions.create({
+    fileId: folderId,
+    resource: {
+      role: "reader",
+      type: "anyone",
+    },
+  });
+
+  return folderId;
 }
 
 // データURLの画像をGoogle Driveにアップロード
-export async function uploadImageToDrive(folderId, dataUrl, accessToken) {
+export async function uploadImageToDrive(folderId, dataUrl, accessToken, imgName = null) {
   if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
 
   const byteString = atob(dataUrl.split(",")[1]);
@@ -58,7 +69,7 @@ export async function uploadImageToDrive(folderId, dataUrl, accessToken) {
   const blob = new Blob([ab], { type: mimeString });
 
   const metadata = {
-    name: `photo_${Date.now()}.png`,
+    name: `${imgName == null ? Date.now() : imgName}.png`,
     mimeType: mimeString,
     parents: [folderId],
   };
