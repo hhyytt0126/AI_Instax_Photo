@@ -1,20 +1,19 @@
 version: '3.8'
 services:
-  node:
+  react-app:
     build:
       context: .
       dockerfile: Dockerfile
-    command: yarn start
+    volumes:
+      - ./react_app:/usr/src/app # ローカルをコンテナ内にマウント
+    command: ["yarn", "start"]
     ports:
       - "3000:3000"
-    volumes:
-      # 「react_app」フォルダを /usr/src/app にマウント
-      - ./react_app:/usr/src/app
-      # node_modules はコンテナ内に残す（ホストと共有しない）
-      - /usr/src/app/node_modules
+    stdin_open: true 
   
   backend:
     build: ./backend
+    command: ["yarn", "start"]
     ports:
       - "5000:5000"
     volumes:

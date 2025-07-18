@@ -1,11 +1,6 @@
-FROM node:16.14.0
-
+FROM node:lts
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm install
-
+RUN yarn install
 COPY . .
-
-EXPOSE 5000
-CMD ["node", "index.js"]
+CMD ["yarn", "start"]
