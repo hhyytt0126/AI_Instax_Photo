@@ -1,0 +1,219 @@
+import React, { useState } from 'react';
+import '../css/generateModal.css';
+import { convertToViewLink } from '../hooks/useDriveFiles';
+
+export default function GenerateModal({ imageUrl, onClose, onGenerate, generating }) {
+  const [prompt, setPrompt] = useState("8k, RAW photo, best quality, masterpiece, realistic");
+  const [negativePrompt, setNegativePrompt] = useState("EasyNegative, low quality, blurry, distorted");
+  const [steps, setSteps] = useState(20);
+  const [cfgScale, setCfgScale] = useState(7);
+  const [sampler, setSampler] = useState("Euler a");
+
+  // ControlNet preprocessor の有効/無効設定
+  const [useCanny, setUseCanny] = useState(true);
+  const [useDepth, setUseDepth] = useState(true);
+  const [useTile, setUseTile] = useState(true);
+
+  const viewLink = convertToViewLink(imageUrl);
+
+  const handleSubmit = async () => {
+    const controlnetArgs = [
+      ...(useCanny ? [{
+        enabled: true,
+        module: "canny",
+        model: "control_canny-fp16 [e3fe7712]",
+        weight: 1.0,
+        resize_mode: "Crop and Resize",
+        processor_res: 1024,
+        guidance_start: 0.0,
+        guidance_end: 1.0,
+        control_mode: "Balanced"
+      }] : []),
+      ...(useDepth ? [{
+        enabled: true,
+        module: "depth_midas",
+        model: "control_depth-fp16 [400750f6]",
+        weight: 1.0,
+        resize_mode: "Crop and Resize",
+        processor_res: 512,
+        guidance_start: 0.0,
+        guidance_end: 1.0,
+        control_mode: "Balanced"
+      }] : []),
+      ...(useTile ? [{
+        enabled: true,
+        module: "tile_resample",
+        model: "control_v11f1e_sd15_tile [a371b31b]",
+        weight: 0.7,
+        resize_mode: "Crop and Resize",
+        processor_res: 512,
+        guidance_start: 0.0,
+        guidance_end: 1.0,
+        control_mode: "Balanced"
+      }] : [])
+    ];
+
+    const payload = {
+      prompt,
+      negative_prompt: negativePrompt,
+      steps,
+      cfg_scale: cfgScale,
+      sampler_name: sampler,
+      seed: -1,
+      enable_hr: false,
+      hr_scale: 2.0,
+      hr_upscaler: "Latent",
+      denoising_strength: 0.7,
+      override_settings: {
+        sd_model_checkpoint: "flat2DAnimerge_v45Sharp [fe95063ba6]"
+      },
+      alwayson_scripts: controlnetArgs.length > 0 ? {
+        controlnet: { args: controlnetArgs }
+      } : undefined
+    };
+
+    console.log("payload を送信しました:", payload);
+    await onGenerate(payload);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">画像生成設定</h2>
+        </div>
+
+        <div className="modal-body">
+          <div className="form-and-image">
+          <div className="form-container">
+          <div className="form-group">
+            <label className="form-label">プロンプト</label>
+            <textarea 
+              className="form-textarea"
+              value={prompt} 
+              onChange={(e) => setPrompt(e.target.value)}
+              rows="3"
+              placeholder="生成したい画像の詳細を入力..."
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">ネガティブプロンプト</label>
+            <textarea 
+              className="form-textarea"
+              value={negativePrompt} 
+              onChange={(e) => setNegativePrompt(e.target.value)}
+              rows="2"
+              placeholder="避けたい要素を入力..."
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">ステップ数</label>
+              <input 
+                type="number" 
+                className="form-input"
+                value={steps} 
+                onChange={(e) => setSteps(Number(e.target.value))}
+                min="1"
+                max="150"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">CFG Scale</label>
+              <input 
+                type="number" 
+                className="form-input"
+                value={cfgScale} 
+                onChange={(e) => setCfgScale(Number(e.target.value))}
+                min="1"
+                max="30"
+                step="0.1"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">サンプラー</label>
+            <select 
+              className="form-select"
+              value={sampler} 
+              onChange={(e) => setSampler(e.target.value)}
+            >
+              <option value="Euler a">Euler a</option>
+              <option value="Euler">Euler</option>
+              <option value="DDIM">DDIM</option>
+              <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+              <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">ControlNet設定</label>
+            <div className="checkbox-group">
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  className="checkbox-input"
+                  checked={useCanny} 
+                  onChange={(e) => setUseCanny(e.target.checked)} 
+                />
+                <span className="checkbox-text">Canny (エッジ検出)</span>
+              </label>
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  className="checkbox-input"
+                  checked={useDepth} 
+                  onChange={(e) => setUseDepth(e.target.checked)} 
+                />
+                <span className="checkbox-text">Depth (深度情報)</span>
+              </label>
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  className="checkbox-input"
+                  checked={useTile} 
+                  onChange={(e) => setUseTile(e.target.checked)} 
+                />
+                <span className="checkbox-text">Tile (タイル処理)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        </div>
+          {imageUrl && (
+            <iframe
+              src={viewLink}
+              className="preview-iframe"
+              allow="fullscreen"
+              title="画像プレビュー"
+            />
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button 
+            className={`generate-button ${generating ? 'generating' : ''}`}
+            onClick={handleSubmit} 
+            disabled={generating}
+          >
+            {generating ? (
+              <>
+                <span className="spinner"></span>
+                生成中...
+              </>
+            ) : (
+              "生成する"
+            )}
+          </button>
+          <button className="cancel-button" onClick={onClose}>
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,22 @@
+.folder-toggle {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 6px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.folder-toggle:hover {
+  background-color: #d9eaff;
+}
+
+.folder-toggle:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
