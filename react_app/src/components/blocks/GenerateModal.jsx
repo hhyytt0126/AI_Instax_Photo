@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import '../css/generateModal.css';
 import { convertToViewLink } from '../hooks/useDriveFiles';
-
+import ProgressModal from './ProgressModal';
 export default function GenerateModal({ imageUrl, onClose, onGenerate, generating }) {
   const [prompt, setPrompt] = useState("8k, RAW photo, best quality, masterpiece, realistic");
   const [negativePrompt, setNegativePrompt] = useState("EasyNegative, low quality, blurry, distorted");
   const [steps, setSteps] = useState(20);
   const [cfgScale, setCfgScale] = useState(7);
   const [sampler, setSampler] = useState("Euler a");
-
+  const [showProgress, setShowProgress] = useState(false);
   // ControlNet preprocessor の有効/無効設定
   const [useCanny, setUseCanny] = useState(true);
   const [useDepth, setUseDepth] = useState(true);
@@ -17,6 +17,7 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
   const viewLink = convertToViewLink(imageUrl);
 
   const handleSubmit = async () => {
+    setShowProgress(true);
     const controlnetArgs = [
       ...(useCanny ? [{
         enabled: true,
@@ -74,9 +75,11 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
 
     console.log("payload を送信しました:", payload);
     await onGenerate(payload);
+    setShowProgress(false);
   };
 
   return (
+    <>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -215,5 +218,13 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
         </div>
       </div>
     </div>
+          <ProgressModal
+        imageUrl={imageUrl}
+        visible={showProgress}
+        onClose={() => setShowProgress(false)}
+        sdApiUrl={process.env.SD_WEBUI_URL || 'http://localhost:7860'}
+      />
+    </>
+  
   );
 }

@@ -7,6 +7,13 @@ export function convertToViewLink(downloadUrl) {
   const fileId = match[1];
   return `https://drive.google.com/file/d/${fileId}/preview`;
 }
+
+export function convertToPreviewLink(downloadUrl) {
+  const match = downloadUrl.match(/id=([^&]+)/);
+  if (!match) return null;
+  const fileId = match[1];
+  return `https://lh3.googleusercontent.com/d${fileId}`;
+}
 export function useDriveFiles(gapiClient, PAGE_SIZE = 100) {
   const [files, setFiles] = useState([]); // トップレベルのファイル一覧
   const [subfolderContents, setSubfolderContents] = useState({}); // フォルダIDをキーにファイル配列を格納
