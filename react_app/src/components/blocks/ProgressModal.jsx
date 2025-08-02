@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import '../css/progressModal.css';
 import { convertToViewLink } from '../hooks/useDriveFiles';
+import { interruptedProgress } from '../utils/stableDiffusionAPI';
 export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = 'http://127.0.0.1:7860' }) {
   const [progress, setProgress] = useState(0);
   const [textInfo, setTextInfo] = useState('');
@@ -72,7 +73,18 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
             )}
           </>
         )}
-        <button className="close-button" onClick={onClose}>閉じる</button>
+        <div className="button-group">
+          <button className="close-button" onClick={onClose}>閉じる</button>
+          <button className="close-button" onClick={
+            async () => {
+              try {
+                await interruptedProgress(sdApiUrl);
+              } catch (err) {
+                console.error('中断中にエラー:', err);
+              }
+            }
+          }>中断</button>
+        </div>
       </div>
     </div>
   );

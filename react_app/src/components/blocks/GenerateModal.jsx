@@ -11,7 +11,7 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
   const [showProgress, setShowProgress] = useState(false);
   // ControlNet preprocessor の有効/無効設定
   const [useCanny, setUseCanny] = useState(true);
-  const [useDepth, setUseDepth] = useState(true);
+  const [useDepth, setUseDepth] = useState(false);
   const [useTile, setUseTile] = useState(true);
 
   const viewLink = convertToViewLink(imageUrl);
@@ -25,7 +25,7 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
         model: "control_canny-fp16 [e3fe7712]",
         weight: 1.0,
         resize_mode: "Crop and Resize",
-        processor_res: 1024,
+        processor_res: 512,
         guidance_start: 0.0,
         guidance_end: 1.0,
         control_mode: "Balanced"
@@ -43,11 +43,11 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
       }] : []),
       ...(useTile ? [{
         enabled: true,
-        module: "tile_resample",
+        module: "tile_colorfix+sharp",
         model: "control_v11f1e_sd15_tile [a371b31b]",
         weight: 0.7,
         resize_mode: "Crop and Resize",
-        processor_res: 512,
+        processor_res: 1024,
         guidance_start: 0.0,
         guidance_end: 1.0,
         control_mode: "Balanced"

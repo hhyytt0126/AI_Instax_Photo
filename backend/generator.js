@@ -9,13 +9,14 @@ async function generateImage(imageUrl, payload) {
     const resp = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     console.log('content-type:', resp.headers['content-type'], 'size:', resp.data.byteLength);
     console.log('input payload:', payload);
-
-    // ② Sharpでメタデータ取得
-    const img = sharp(resp.data).rotate();
+    const rotatedBuffer = await sharp(resp.data).rotate().toBuffer();
+// 回転後のバッファからsharpインスタンスを作成
+    const img = sharp(rotatedBuffer);
+    // 回転後の画像のサイズを取得
     const meta = await img.metadata();
     if (!meta.format) throw new Error('Sharp が画像形式を認識できませんでした');
     const { width: oW, height: oH } = meta;
-
+    console.log('original size:', oW, 'x', oH, 'format:', meta.format);
     // ③ 縦横判定してリサイズ
     const isPortrait = oH > oW;
     const W = isPortrait ? 1024 : 1360;
