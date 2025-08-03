@@ -7,7 +7,7 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
   const [negativePrompt, setNegativePrompt] = useState("EasyNegative, low quality, blurry, distorted");
   const [steps, setSteps] = useState(20);
   const [cfgScale, setCfgScale] = useState(7);
-  const [sampler, setSampler] = useState("Euler a");
+  const [sampler, setSampler] = useState("DPM++ 2M Karras");
   const [showProgress, setShowProgress] = useState(false);
   // ControlNet preprocessor の有効/無効設定
   const [useCanny, setUseCanny] = useState(true);
@@ -145,11 +145,12 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
               value={sampler} 
               onChange={(e) => setSampler(e.target.value)}
             >
+              <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+              <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
               <option value="Euler a">Euler a</option>
               <option value="Euler">Euler</option>
               <option value="DDIM">DDIM</option>
-              <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
-              <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+
             </select>
           </div>
 
@@ -218,7 +219,7 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
         </div>
       </div>
     </div>
-          <ProgressModal
+      <ProgressModal
         imageUrl={imageUrl}
         visible={showProgress}
         onClose={() => setShowProgress(false)}

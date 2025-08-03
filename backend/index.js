@@ -81,7 +81,7 @@ app.post('/api/generate', async (req, res) => {
 
     // アップロード用ファイル名
     const timestamp = Date.now();
-    const fileName = `generated-${timestamp}.png`;
+    const fileName = `${timestamp}-AIphoto.jpg`;
 
     //Google Drive にアップロード
     const uploaded = await uploadFileToDrive(
@@ -89,7 +89,7 @@ app.post('/api/generate', async (req, res) => {
       driveFolderId,
       fileName,
       imageBuffer,
-      'image/png'
+      'image/jpg'
     );
 
     res.json({
