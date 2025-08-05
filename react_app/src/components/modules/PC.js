@@ -61,7 +61,7 @@ export default function PC() {
   };
 const handleGenerateFromUrl = async (imageUrl, parentFolderId, payload) => {
   setGenerating(true);
-
+  
   try {
     const result = await generateImageFromAPI({
       imageUrl,
@@ -69,6 +69,7 @@ const handleGenerateFromUrl = async (imageUrl, parentFolderId, payload) => {
       driveFolderId: parentFolderId,
       accessToken: token
     });
+    console.log('Generating image from URL:', imageUrl, 'in folder:', parentFolderId, 'with payload:', payload);
     console.log('Image generation result:', result);
     if (result.success) {
       const newFileId = result.fileId;

@@ -17,7 +17,6 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
         const res = await axios.get(`${sdApiUrl}/sdapi/v1/progress`, {
           params: { skip_current_image: false }
         });
-        console.log('Progress response:', res.data);
         const data = res.data;
         setProgress(data.progress);
         setTextInfo(data.textinfo || '');

@@ -95,13 +95,13 @@ export default function FileList({
                               <GenerateModal
                                 imageUrl={child.webContentLink}
                                 onClose={() => setShowModal(false)}
-                                onGenerate={settings => handleGenerateFromUrl(child.webContentLink, child.parents, settings)}
+                                onGenerate={settings => handleGenerateFromUrl(child.webContentLink, child.parents[0], settings)}
                                 generating={generating}
                               />
                             )}
                             <button
                               className="btn btn-delete"
-                              onClick={() => handleDeleteFile(child.id, child.parents)}
+                              onClick={() => handleDeleteFile(child.id, child.parents[0])}
                             >
                               削除
                             </button>

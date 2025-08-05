@@ -75,7 +75,7 @@ app.post('/api/generate', async (req, res) => {
   try {
     console.log('Request body:', req.body);
     const { imageUrl, payload, driveFolderId, accessToken } = req.body;
-
+    console.log('imageUrl:', imageUrl, 'payload:', payload, 'driveFolderId:', driveFolderId, 'accessToken:', accessToken?.substring(0,10), '...');
     // AI 画像生成
     const imageBuffer = await generateImage(imageUrl, payload);
 

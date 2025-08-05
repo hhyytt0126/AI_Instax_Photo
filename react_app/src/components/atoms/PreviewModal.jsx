@@ -13,7 +13,6 @@ export default function PreviewModal({ previewImageUrl, onClose }) {
   }, [previewImageUrl]);
 
   if (!previewImageUrl) return null;
-  console.log('PreviewModal:', previewImageUrl);
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>

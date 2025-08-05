@@ -10,6 +10,7 @@ async function generateImage(imageUrl, payload) {
     console.log('content-type:', resp.headers['content-type'], 'size:', resp.data.byteLength);
     console.log('input payload:', payload);
     const rotatedBuffer = await sharp(resp.data).rotate().toBuffer();
+    let W, H;
 // 回転後のバッファからsharpインスタンスを作成
     const img = sharp(rotatedBuffer);
     // 回転後の画像のサイズを取得
@@ -19,8 +20,13 @@ async function generateImage(imageUrl, payload) {
     console.log('original size:', oW, 'x', oH, 'format:', meta.format);
     // ③ 縦横判定してリサイズ
     const isPortrait = oH > oW;
-    const W = isPortrait ? 1024 : 1360;
-    const H = isPortrait ? 1360 : 1024;
+    W = isPortrait ? 1024 : 1360;
+    H = isPortrait ? 1360 : 1024;
+    if(payload.enable_hr){
+      // 高解像度モードの場合は倍のサイズにする
+      W /= 2;
+      H /= 2;
+    }
     const bufResized = await img.resize(W, H).png().toBuffer();
     const base64Image = bufResized.toString('base64');
 
