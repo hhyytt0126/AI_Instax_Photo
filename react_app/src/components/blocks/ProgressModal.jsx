@@ -14,7 +14,7 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
     let intervalId;
     async function poll() {
       try {
-        const res = await axios.get(`${sdApiUrl}/sdapi/v1/progress`, {
+        const res = await axios.default.get(`${sdApiUrl}/sdapi/v1/progress`, {
           params: { skip_current_image: false }
         });
         const data = res.data;
