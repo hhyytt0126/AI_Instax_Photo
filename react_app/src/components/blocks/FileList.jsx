@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../css/FileList.css';
 import GenerateModal from './GenerateModal';
+import StitchImages from './StitchImages';
 
 export default function FileList({
   files,
@@ -16,7 +17,10 @@ export default function FileList({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [modalFile, setModalFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
-
+  
+  // チェキフォーマット生成用モーダル表示制御
+  const [showStitchModal, setShowStitchModal] = useState(false);
+  const [stitchImageUrl, setStitchImageUrl] = useState(null);
   const IMGLENGTH = 3;
 
   const toggleFileSelection = (fileId) => {
@@ -28,7 +32,11 @@ export default function FileList({
           : prev
     );
   };
-
+  // 画像1枚選択時にチェキフォーマット生成ボタンを表示
+  const handleStitchImage = (imageUrl) => {
+    setStitchImageUrl(imageUrl);
+    setShowStitchModal(true);
+  };
   const renderFiles = (fileList) => (
     <ul className="folder-list">
       {fileList.map(file => {
@@ -90,6 +98,14 @@ export default function FileList({
                               disabled={generating}
                             >
                               {generating ? '生成中...' : 'この画像で生成'}
+                            </button>
+                            {/* チェキフォーマット生成ボタン */}
+                            <button
+                              className="btn btn-stitch"
+                              style={{ marginLeft: '0.5rem', background: '#e0e', color: '#fff' }}
+                              onClick={() => handleStitchImage(child.webContentLink)}
+                            >
+                              チェキフォーマット生成
                             </button>
                             {modalFile?.id === child.id && showModal && (
                               <GenerateModal
@@ -183,5 +199,18 @@ export default function FileList({
     </ul>
   );
 
-  return <>{renderFiles(files)}</>;
+    return (
+    <>
+      {renderFiles(files)}
+      {/* StitchImagesモーダル表示 */}
+      {showStitchModal && (
+        <div className="modal-bg" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.4)', zIndex:1000 }}>
+          <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', padding:24, borderRadius:8 }}>
+            <button style={{ float:'right' }} onClick={()=>setShowStitchModal(false)}>閉じる</button>
+            <StitchImages imageUrl={stitchImageUrl} />
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
