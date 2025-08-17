@@ -1,11 +1,21 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
-const StitchImages = () => {
+const StitchImages = ({ imageUrls }) => {
+  // imageUrls: [A, B] で渡される
   const [selectedImages, setSelectedImages] = useState([null, null]);
   const [resultImages, setResultImages] = useState([null, null]);
   const fileInputRefs = [useRef(), useRef()];
 
-  // 画像選択時
+  // propsで画像URLが渡されたら自動セット
+  useEffect(() => {
+    if (imageUrls && imageUrls.length === 2) {
+      console.log('StitchImages: 受け取った画像URL', imageUrls);
+      setSelectedImages(imageUrls);
+      setResultImages([null, null]); // 新規生成時は結果クリア
+    }
+  }, [imageUrls]);
+
+  // 画像選択時（手動アップロード用）
   const handleFileChange = (e, idx) => {
     const file = e.target.files[0];
     if (file) {
@@ -16,6 +26,7 @@ const StitchImages = () => {
           next[idx] = ev.target.result;
           return next;
         });
+        setResultImages([null, null]);
       };
       reader.readAsDataURL(file);
     }
@@ -24,6 +35,9 @@ const StitchImages = () => {
   // チェキフォーマットに変換
   const handleConvert = () => {
     if (!selectedImages[0] || !selectedImages[1]) return;
+    // デバッグ: 画像A,BのURLを表示
+    console.log('画像AのURL:', selectedImages[0]);
+    console.log('画像BのURL:', selectedImages[1]);
     // 画像A→C, 画像B→D
     const imgA = new window.Image();
     const imgB = new window.Image();
@@ -59,7 +73,7 @@ const StitchImages = () => {
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, outW, outH);
-      // 右端にカラー帯（例: ピンク）
+      // 右端にカラー帯（ピンク）
       ctx.fillStyle = 'rgb(238,112,133)';
       ctx.fillRect(outW - bandW, 0, bandW, outH);
       // 左右に画像を配置
@@ -97,14 +111,14 @@ const StitchImages = () => {
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
         {selectedImages[0] && (
           <div>
-            <span>画像1プレビュー:</span><br />
-            <img src={selectedImages[0]} alt="画像1" style={{ maxWidth: 150, border: '1px solid #ccc' }} />
+            <span>画像Aプレビュー:</span><br />
+            <img src={selectedImages[0]} alt="画像A" style={{ maxWidth: 150, border: '1px solid #ccc' }} />
           </div>
         )}
         {selectedImages[1] && (
           <div>
-            <span>画像2プレビュー:</span><br />
-            <img src={selectedImages[1]} alt="画像2" style={{ maxWidth: 150, border: '1px solid #ccc' }} />
+            <span>画像Bプレビュー:</span><br />
+            <img src={selectedImages[1]} alt="画像B" style={{ maxWidth: 150, border: '1px solid #ccc' }} />
           </div>
         )}
       </div>
