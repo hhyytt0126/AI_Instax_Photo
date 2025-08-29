@@ -58,7 +58,7 @@ export async function createDriveSubFolder(parentFolderId, folderName) {
 // データURLの画像をGoogle Driveにアップロード
 export async function uploadImageToDrive(folderId, dataUrl, accessToken, imgName = null) {
   if (!window.gapi?.client?.drive) throw new Error("Google Drive API is not initialized");
-
+  //dattaUrlが初めからバイナリだったらスルーしてほしい
   const byteString = atob(dataUrl.split(",")[1]);
   const mimeString = dataUrl.split(",")[0].split(":")[1].split(";")[0];
   const ab = new ArrayBuffer(byteString.length);

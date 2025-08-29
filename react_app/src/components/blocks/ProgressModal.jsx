@@ -23,7 +23,7 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
         if (data.current_image) {
           setCurrentImage(`data:image/png;base64,${data.current_image}`); // 🔹 Base64画像としてセット
         }
-        if (data.progress >= 1 || data.state.interrupted) {
+        if (data.progress >= 1) {
           clearInterval(intervalId);
         }
       } catch (e) {
