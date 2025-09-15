@@ -118,189 +118,189 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
 
   return (
     <>
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">画像生成設定</h2>
-        </div>
-
-        <div className="modal-body">
-          <div className="form-and-image">
-          <div className="form-container">
-          <div className="form-group">
-            <label className="form-label">チェックポイント</label>
-            <select 
-              className="form-select"
-              value={checkPoint} 
-              onChange={(e) => setCheckPoint(e.target.value)}
-            >
-              <option value="flat2DAnimerge_v45Sharp [fe95063ba6]">flat2DAnimerge_v45Sharp</option>
-              <option value="AnythingXL_v50.safetensors [7f96a1a9ca]">AnythingXL_v50</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">プロンプト</label>
-            <textarea 
-              className="form-textarea"
-              value={prompt} 
-              onChange={(e) => setPrompt(e.target.value)}
-              rows="3"
-              placeholder="生成したい画像の詳細を入力..."
-            />
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2 className="modal-title">画像生成設定</h2>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">ネガティブプロンプト</label>
-            <textarea 
-              className="form-textarea"
-              value={negativePrompt} 
-              onChange={(e) => setNegativePrompt(e.target.value)}
-              rows="2"
-              placeholder="避けたい要素を入力..."
-            />
-          </div>
+          <div className="modal-body">
+            <div className="form-and-image">
+              <div className="form-container">
+                <div className="form-group">
+                  <label className="form-label">チェックポイント</label>
+                  <select
+                    className="form-select"
+                    value={checkPoint}
+                    onChange={(e) => setCheckPoint(e.target.value)}
+                  >
+                    <option value="flat2DAnimerge_v45Sharp [fe95063ba6]">flat2DAnimerge_v45Sharp</option>
+                    <option value="AnythingXL_v50.safetensors [7f96a1a9ca]">AnythingXL_v50</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">プロンプト</label>
+                  <textarea
+                    className="form-textarea"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows="3"
+                    placeholder="生成したい画像の詳細を入力..."
+                  />
+                </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">ステップ数</label>
-              <input 
-                type="number" 
-                className="form-input"
-                value={steps} 
-                onChange={(e) => setSteps(Number(e.target.value))}
-                min="1"
-                max="150"
+                <div className="form-group">
+                  <label className="form-label">ネガティブプロンプト</label>
+                  <textarea
+                    className="form-textarea"
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    rows="2"
+                    placeholder="避けたい要素を入力..."
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">ステップ数</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={steps}
+                      onChange={(e) => setSteps(Number(e.target.value))}
+                      min="1"
+                      max="150"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">CFG Scale</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={cfgScale}
+                      onChange={(e) => setCfgScale(Number(e.target.value))}
+                      min="1"
+                      max="30"
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">サンプラー</label>
+                  <select
+                    className="form-select"
+                    value={sampler}
+                    onChange={(e) => setSampler(e.target.value)}
+                  >
+                    <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+                    <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+                    <option value="Euler a">Euler a</option>
+                    <option value="Euler">Euler</option>
+                    <option value="DDIM">DDIM</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">ControlNet 設定</label>
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={enableHr}
+                        onChange={(e) => setEnableHr(e.target.checked)}
+                      />
+                      <span className="checkbox-text">高解像度補助</span>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={useCanny}
+                        onChange={(e) => setUseCanny(e.target.checked)}
+                      />
+                      <span className="checkbox-text">Canny (エッジ検出)</span>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={useDepth}
+                        onChange={(e) => setUseDepth(e.target.checked)}
+                      />
+                      <span className="checkbox-text">Line Art</span>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={useLineArt}
+                        onChange={(e) => setUseLineArt(e.target.checked)}
+                      />
+                      <span className="checkbox-text">Depth (深度情報)</span>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={useTile}
+                        onChange={(e) => setUseTile(e.target.checked)}
+                      />
+                      <span className="checkbox-text">Tile (タイル処理)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Adetailer 設定</label>
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={useAdetailer}
+                        onChange={(e) => setUseAdetailer(e.target.checked)}
+                      />
+                      <span className="checkbox-text">Adetailer を有効にする（顔補正・ディテール強化）</span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            {imageUrl && (
+              <iframe
+                src={viewLink}
+                className="preview-iframe"
+                allow="fullscreen"
+                title="画像プレビュー"
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">CFG Scale</label>
-              <input 
-                type="number" 
-                className="form-input"
-                value={cfgScale} 
-                onChange={(e) => setCfgScale(Number(e.target.value))}
-                min="1"
-                max="30"
-                step="0.1"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">サンプラー</label>
-            <select 
-              className="form-select"
-              value={sampler} 
-              onChange={(e) => setSampler(e.target.value)}
-            >
-              <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
-              <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
-              <option value="Euler a">Euler a</option>
-              <option value="Euler">Euler</option>
-              <option value="DDIM">DDIM</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">ControlNet 設定</label>
-            <div className="checkbox-group">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={enableHr} 
-                  onChange={(e) => setEnableHr(e.target.checked)} 
-                />
-                <span className="checkbox-text">高解像度補助</span>
-              </label>
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={useCanny} 
-                  onChange={(e) => setUseCanny(e.target.checked)} 
-                />
-                <span className="checkbox-text">Canny (エッジ検出)</span>
-              </label>
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={useDepth} 
-                  onChange={(e) => setUseDepth(e.target.checked)} 
-                />
-                <span className="checkbox-text">Line Art</span>
-              </label>
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={useLineArt} 
-                  onChange={(e) => setUseLineArt(e.target.checked)} 
-                />
-                <span className="checkbox-text">Depth (深度情報)</span>
-              </label>
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={useTile} 
-                  onChange={(e) => setUseTile(e.target.checked)} 
-                />
-                <span className="checkbox-text">Tile (タイル処理)</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Adetailer 設定</label>
-            <div className="checkbox-group">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  className="checkbox-input"
-                  checked={useAdetailer} 
-                  onChange={(e) => setUseAdetailer(e.target.checked)} 
-                />
-                <span className="checkbox-text">Adetailer を有効にする（顔補正・ディテール強化）</span>
-              </label>
-            </div>
-          </div>
-
-        </div>
-        </div>
-          {imageUrl && (
-            <iframe
-              src={viewLink}
-              className="preview-iframe"
-              allow="fullscreen"
-              title="画像プレビュー"
-            />
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <button 
-            className={`generate-button ${generating ? 'generating' : ''}`}
-            onClick={handleSubmit} 
-            disabled={generating}
-          >
-            {generating ? (
-              <>
-                <span className="spinner"></span>
-                生成中...
-              </>
-            ) : (
-              "生成する"
             )}
-          </button>
-          <button className="cancel-button" onClick={onClose}>
-            キャンセル
-          </button>
+          </div>
+
+          <div className="modal-actions">
+            <button
+              className={`generate-button ${generating ? 'generating' : ''}`}
+              onClick={handleSubmit}
+              disabled={generating}
+            >
+              {generating ? (
+                <>
+                  <span className="spinner"></span>
+                  生成中...
+                </>
+              ) : (
+                "生成する"
+              )}
+            </button>
+            <button className="cancel-button" onClick={onClose}>
+              キャンセル
+            </button>
+          </div>
         </div>
       </div>
-    </div>
       <ProgressModal
         imageUrl={imageUrl}
         visible={showProgress}

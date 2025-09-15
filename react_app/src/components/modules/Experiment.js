@@ -50,17 +50,152 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
   const [sampler, setSampler] = useState("Euler a");
   const [seed, setSeed] = useState(-1);
   const [isUploading, setIsUploading] = useState(false);
-  const [brushSize, setBrushSize] = useState(32);
+  const [brushSize, setBrushSize] = useState(120);
   const [eraseMode, setEraseMode] = useState(false);
   const [maskBlur, setMaskBlur] = useState(4);
   const [invertMaskParam, setInvertMaskParam] = useState(0); // 0 or 1 for A1111
 
   const [sending, setSending] = useState(false);
   const [resultImages, setResultImages] = useState([]);
+  const [checkpoint, setCheckpoint] = useState("None");
   const [useCanny, setUseCanny] = useState(true);
   const [useDepth, setUseDepth] = useState(false);
   const [useLineArt, setUseLineArt] = useState(false);
   const [useTile, setUseTile] = useState(true);
+  // 複数マスク保存・プロンプト管理
+  const DEFAULT_NEG_PROMPT = "EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly,　error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw.";
+  const [maskList, setMaskList] = useState([]);
+  // マスク保存関数
+  function saveCurrentMask() {
+    if (!imgUrl) {
+      alert("画像を選択してください");
+      return;
+    }
+    const maskUrl = maskDataUrl();
+    setMaskList([
+      ...maskList,
+      {
+        mask: maskUrl,
+        prompt: "",
+        negative_prompt: DEFAULT_NEG_PROMPT,
+      }
+    ]);
+    clearMask();
+  }
+
+  // マスク削除
+  function deleteMask(idx) {
+    setMaskList(maskList.filter((_, i) => i !== idx));
+  }
+
+  // マスクごとのプロンプト更新
+  function updateMaskPrompt(idx, value) {
+    setMaskList(maskList.map((m, i) => i === idx ? { ...m, prompt: value } : m));
+  }
+  function updateMaskNegPrompt(idx, value) {
+    setMaskList(maskList.map((m, i) => i === idx ? { ...m, negative_prompt: value } : m));
+  }
+
+  // マスクごとにInpaint送信
+  async function handleSendForMask(maskObj, inputImgB64 = null) {
+    // inputImgB64: 前回生成画像（base64）
+    if (!imgUrl && !inputImgB64) return alert("画像を選択してください");
+    try {
+      setSending(true);
+      let base64Init;
+      if (inputImgB64) {
+        base64Init = inputImgB64;
+      } else {
+        base64Init = dataUrlToBase64(await dataUrlFromImage());
+      }
+      const base64Mask = dataUrlToBase64(maskObj.mask);
+
+      const controlnetArgs = [
+        ...(useCanny ? [{
+          enabled: true,
+          module: "canny",
+          model: "control_canny-fp16 [e3fe7712]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useDepth ? [{
+          enabled: true,
+          module: "depth_midas",
+          model: "control_depth-fp16 [400750f6]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useLineArt ? [{
+          enabled: true,
+          module: "lineart_standard (from white bg & black line)",
+          model: "control_lineart-fp16 [b1c3f8d2]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useTile ? [{
+          enabled: true,
+          module: "tile_colorfix+sharp",
+          model: "control_v11f1e_sd15_tile [a371b31b]",
+          weight: 0.7,
+          resize_mode: "Crop and Resize",
+          processor_res: 2048,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : [])
+      ];
+
+      const alwayson_scripts = {
+        controlnet: { args: controlnetArgs }
+      };
+
+      const payload = {
+        init_images: [base64Init],
+        prompt: maskObj.prompt,
+        negative_prompt: maskObj.negative_prompt,
+        steps: Number(steps),
+        cfg_scale: Number(cfgScale),
+        sampler_name: sampler,
+        seed: Number(seed),
+        denoising_strength: Number(denoise),
+        mask: base64Mask,
+        mask_blur: Number(maskBlur),
+        inpainting_mask_invert: Number(invertMaskParam),
+        inpaint_full_res: true,
+        inpaint_full_res_padding: 32,
+        inpainting_fill: 1,
+        resize_mode: 0,
+        alwayson_scripts,
+        override_settings: checkpoint !== "None" ? { sd_model_checkpoint: checkpoint } : undefined,
+      };
+
+      const resp = await fetch(`${sdApiBase}/img2img`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      setResultImages(data.images || []);
+      return data.images && data.images[0] ? data.images[0] : null;
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "送信に失敗しました");
+    } finally {
+      setSending(false);
+    }
+  }
   const imgRef = useRef(null);
   const drawCanvasRef = useRef(null); // for mask drawing (same size as image)
   const previewCanvasRef = useRef(null); // for overlay preview
@@ -99,23 +234,23 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     });
   }
 
-    function createPicker() {
-      if (window.google && window.google.picker && accessToken) {
-        const view = new window.google.picker.View(window.google.picker.ViewId.DOCS_IMAGES);
-        const picker = new window.google.picker.PickerBuilder()
-          .addView(view)
-          .setOAuthToken(accessToken)
-          .setDeveloperKey(API_KEY)
-          .setCallback(pickerCallback)
-          .build();
-        picker.setVisible(true);
-      } else {
-        alert("Google Picker APIがロードされていません。アクセストークンがありません。");
-      }
+  function createPicker() {
+    if (window.google && window.google.picker && accessToken) {
+      const view = new window.google.picker.View(window.google.picker.ViewId.DOCS_IMAGES);
+      const picker = new window.google.picker.PickerBuilder()
+        .addView(view)
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(API_KEY)
+        .setCallback(pickerCallback)
+        .build();
+      picker.setVisible(true);
+    } else {
+      alert("Google Picker APIがロードされていません。アクセストークンがありません。");
     }
+  }
 
   function pickerCallback(data) {
-    
+
     if (data.action === window.google.picker.Action.PICKED) {
       const fileId = data.docs[0].id;
       console.log("pickerCallback", data.docs[0]);
@@ -126,14 +261,14 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
           Authorization: `Bearer ${accessToken}`
         }
       })
-      .then(res => res.blob())
-      .then(blob => {
-        const imgUrl = URL.createObjectURL(blob);
-        setImgUrl(imgUrl);
-      })
-      .catch(err => {
-        alert('画像の取得に失敗しました: ' + err.message);
-      });
+        .then(res => res.blob())
+        .then(blob => {
+          const imgUrl = URL.createObjectURL(blob);
+          setImgUrl(imgUrl);
+        })
+        .catch(err => {
+          alert('画像の取得に失敗しました: ' + err.message);
+        });
     }
   }
   // Load chosen image to <img> and initialize canvases
@@ -165,7 +300,6 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     img.src = imgUrl;
   }, [imgUrl]);
   // (removed duplicate declaration)
-
   function getCanvasPos(e) {
     const canvas = drawCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -250,15 +384,15 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
   }
 
   function clearMask() {
-  if (!imgUrl) {
-    alert("画像を選択してください");
-    return;
-  }
-  const canvas = drawCanvasRef.current;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // マスク編集canvasは透明で初期化（画像は描画しない）
-  updatePreview();
+    if (!imgUrl) {
+      alert("画像を選択してください");
+      return;
+    }
+    const canvas = drawCanvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // マスク編集canvasは透明で初期化（画像は描画しない）
+    updatePreview();
   }
 
   function invertMaskPixels() {
@@ -272,11 +406,11 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     const data = imgData.data;
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3]; // alphaチャネルを反転
-      if(a > 0){
+      if (a > 0) {
         data[i + 3] = 0; // alphaチャネルを反転
       }
 
-      else{
+      else {
         data[i] = 255;
         data[i + 1] = 255;
         data[i + 2] = 255;
@@ -331,7 +465,7 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     // マスク編集canvasからアルファ値のみ抽出
     const srcImgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const maskImgData = maskCtx.createImageData(canvas.width, canvas.height);
-    
+
     for (let i = 0; i < srcImgData.data.length; i += 4) {
       if (srcImgData.data[i + 3] > 0) {
         // 塗られた部分は白
@@ -367,52 +501,52 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
       const base64Mask = dataUrlToBase64(maskUrl);
 
       // ControlNet settings (参考: GenerateModal)
-    const controlnetArgs = [
-      ...(useCanny ? [{
-        enabled: true,
-        module: "canny",
-        model: "control_canny-fp16 [e3fe7712]",
-        weight: 1.0,
-        resize_mode: "Crop and Resize",
-        processor_res: 512,
-        guidance_start: 0.0,
-        guidance_end: 1.0,
-        control_mode: "Balanced"
-      }] : []),
-      ...(useDepth ? [{
-        enabled: true,
-        module: "depth_midas",
-        model: "control_depth-fp16 [400750f6]",
-        weight: 1.0,
-        resize_mode: "Crop and Resize",
-        processor_res: 512,
-        guidance_start: 0.0,
-        guidance_end: 1.0,
-        control_mode: "Balanced"
-      }] : []),
-      ...(useLineArt ? [{
-        enabled: true,
-        module: "lineart_standard (from white bg & black line)",
-        model: "control_lineart-fp16 [b1c3f8d2]",
-        weight: 1.0,
-        resize_mode: "Crop and Resize",
-        processor_res: 512,
-        guidance_start: 0.0,
-        guidance_end: 1.0,
-        control_mode: "Balanced"
-      }] : []),
-      ...(useTile ? [{
-        enabled: true,
-        module: "tile_colorfix+sharp",
-        model: "control_v11f1e_sd15_tile [a371b31b]",
-        weight: 0.7,
-        resize_mode: "Crop and Resize",
-        processor_res: 2048,
-        guidance_start: 0.0,
-        guidance_end: 1.0,
-        control_mode: "Balanced"
-      }] : [])
-    ];
+      const controlnetArgs = [
+        ...(useCanny ? [{
+          enabled: true,
+          module: "canny",
+          model: "control_canny-fp16 [e3fe7712]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useDepth ? [{
+          enabled: true,
+          module: "depth_midas",
+          model: "control_depth-fp16 [400750f6]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useLineArt ? [{
+          enabled: true,
+          module: "lineart_standard (from white bg & black line)",
+          model: "control_lineart-fp16 [b1c3f8d2]",
+          weight: 1.0,
+          resize_mode: "Crop and Resize",
+          processor_res: 512,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : []),
+        ...(useTile ? [{
+          enabled: true,
+          module: "tile_colorfix+sharp",
+          model: "control_v11f1e_sd15_tile [a371b31b]",
+          weight: 0.7,
+          resize_mode: "Crop and Resize",
+          processor_res: 2048,
+          guidance_start: 0.0,
+          guidance_end: 1.0,
+          control_mode: "Balanced"
+        }] : [])
+      ];
 
       const alwayson_scripts = {
         controlnet: { args: controlnetArgs }
@@ -435,6 +569,7 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
         inpainting_fill: 1,
         resize_mode: 0,
         alwayson_scripts,
+        override_settings: checkpoint !== "None" ? { sd_model_checkpoint: checkpoint } : undefined,
         // width: imgRef.current?.naturalWidth,
         // height: imgRef.current?.naturalHeight,
       };
@@ -467,28 +602,30 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
   return (
     <div className="w-full max-w-6xl mx-auto p-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2">
           <input
             type="file"
             accept="image/*"
             onChange={(e) => setImgFile(e.target.files?.[0] || null)}
             className="block"
           />
-           <button
+          <button
             onClick={loadPicker}
-            className="px-3 py-2 rounded-2xl shadow border text-sm"
+            className="min-w-[120px] px-4 py-2 rounded-2xl shadow border text-sm whitespace-nowrap"
           >
             Google Driveから選択
           </button>
           <button
             onClick={clearMask}
-            className="px-3 py-2 rounded-2xl shadow border text-sm"
+            className="min-w-[100px] px-4 py-2 rounded-2xl shadow border text-sm whitespace-nowrap"
           >マスク全消去</button>
           <button
             onClick={invertMaskPixels}
-            className="px-3 py-2 rounded-2xl shadow border text-sm"
+            className="min-w-[110px] px-4 py-2 rounded-2xl shadow border text-sm whitespace-nowrap"
           >マスク領域反転</button>
-          <button onClick={downloadMask} className="px-3 py-2 rounded-2xl shadow border text-sm">マスクDL</button>
+          <button onClick={downloadMask} className="min-w-[80px] px-4 py-2 rounded-2xl shadow border text-sm whitespace-nowrap">マスクDL</button>
+          <button onClick={saveCurrentMask} className="min-w-[100px] px-4 py-2 rounded-2xl shadow border text-sm bg-blue-100 whitespace-nowrap">マスク保存</button>
+          {/* 保存したマスク一覧とプロンプト入力・個別送信 */}
         </div>
         {imgUrl && (
           <div className="border rounded-2xl overflow-hidden">
@@ -499,12 +636,11 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border rounded-2xl overflow-hidden">
               <div className="p-2 text-sm font-medium text-center">マスク編集キャンバス</div>
-              <div className="relative flex justify-center items-center" style={{minHeight: '300px'}}>
-                {}
+              <div className="relative flex justify-center items-center" style={{ minHeight: '300px' }}>
                 <canvas
                   ref={drawCanvasRef}
                   className="editor-canvas touch-none cursor-crosshair"
-                  style={{zIndex: 10, background: imgUrl ? `url(${imgUrl}) center/contain no-repeat` : undefined}}
+                  style={{ zIndex: 10, background: imgUrl ? `url(${imgUrl}) center/contain no-repeat` : undefined }}
                   onMouseDown={startPaint}
                   onMouseUp={endPaint}
                   onMouseLeave={endPaint}
@@ -515,7 +651,7 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
                 />
               </div>
             </div>
-            <div className="border rounded-2xl overflow-hidden flex flex-col items-center justify-center" style={{minHeight: '300px'}}>
+            <div className="border rounded-2xl overflow-hidden flex flex-col items-center justify-center" style={{ minHeight: '300px' }}>
               <div className="p-2 text-sm font-medium">プレビュー</div>
               <canvas ref={previewCanvasRef} className="editor-canvas" />
             </div>
@@ -536,12 +672,12 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
           </label>
           <label className="flex items-center gap-3">
             <span className="w-24 text-sm">mask_blur</span>
-            <input type="range" min="0" max="64" value={maskBlur} onChange={(e)=>setMaskBlur(Number(e.target.value))} />
+            <input type="range" min="0" max="64" value={maskBlur} onChange={(e) => setMaskBlur(Number(e.target.value))} />
             <span className="text-sm w-10 text-right">{maskBlur}</span>
           </label>
           <label className="flex items-center gap-3">
             <span className="w-24 text-sm">invert param</span>
-            <input type="checkbox" checked={invertMaskParam===1} onChange={(e)=>setInvertMaskParam(e.target.checked?1:0)} />
+            <input type="checkbox" checked={invertMaskParam === 1} onChange={(e) => setInvertMaskParam(e.target.checked ? 1 : 0)} />
           </label>
         </div>
       </div>
@@ -549,9 +685,9 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
       <div className="lg:col-span-1 space-y-3">
         <div className="border rounded-2xl p-3 space-y-2">
           <div className="text-sm font-semibold">プロンプト</div>
-          <textarea className="w-full border rounded-xl p-2 text-sm" rows={4} value={prompt} onChange={(e)=>setPrompt(e.target.value)} placeholder="a wooden table without the bottle" />
+          <textarea className="w-full border rounded-xl p-2 text-sm" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="a wooden table without the bottle" />
           <div className="text-sm font-semibold">ネガティブ</div>
-          <textarea className="w-full border rounded-xl p-2 text-sm" rows={3} value={negPrompt} onChange={(e)=>setNegPrompt(e.target.value)} placeholder="low quality, blurry" />
+          <textarea className="w-full border rounded-xl p-2 text-sm" rows={3} value={negPrompt} onChange={(e) => setNegPrompt(e.target.value)} placeholder="low quality, blurry" />
           <div className="grid grid-cols-2 gap-3 mt-2">
             <label className="flex items-center gap-3">
               <span className="w-24 text-sm">Canny</span>
@@ -573,58 +709,132 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
           <div className="grid grid-cols-2 gap-2  mt-2">
             <label className="flex items-center gap-2">
               <span className="w-16">steps</span>
-              <input className="border rounded p-1 w-full" type="number" value={steps} min={1} max={150} onChange={(e)=>setSteps(Number(e.target.value))} />
+              <input className="border rounded p-1 w-full" type="number" value={steps} min={1} max={150} onChange={(e) => setSteps(Number(e.target.value))} />
             </label>
             <label className="flex items-center gap-2">
               <span className="w-16">cfg</span>
-              <input className="border rounded p-1 w-full" type="number" value={cfgScale} min={1} max={20} onChange={(e)=>setCfgScale(Number(e.target.value))} />
+              <input className="border rounded p-1 w-full" type="number" value={cfgScale} min={1} max={20} onChange={(e) => setCfgScale(Number(e.target.value))} />
             </label>
             <label className="flex items-center gap-2">
               <span className="w-16">denoise</span>
-              <input className="border rounded p-1 w-full" type="number" step="0.01" min={0} max={1} value={denoise} onChange={(e)=>setDenoise(Number(e.target.value))} />
+              <input className="border rounded p-1 w-full" type="number" step="0.01" min={0} max={1} value={denoise} onChange={(e) => setDenoise(Number(e.target.value))} />
             </label>
             <label className="flex items-center gap-2">
               <span className="w-16">seed</span>
-              <input className="border rounded p-1 w-full" type="number" value={seed} onChange={(e)=>setSeed(Number(e.target.value))} />
+              <input className="border rounded p-1 w-full" type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} />
             </label>
           </div>
           <label className="block text-sm">
             <span>sampler</span>
-            <select className="w-full border rounded-xl p-2" value={sampler} onChange={(e)=>setSampler(e.target.value)}>
+            <select className="w-full border rounded-xl p-2" value={sampler} onChange={(e) => setSampler(e.target.value)}>
               <option>Euler a</option>
               <option>Euler</option>
               <option>DDIM</option>
               <option>DPM++ 2M Karras</option>
             </select>
           </label>
+          <label className="block text-sm mt-2">
+            <span>checkpoint</span>
+            <select className="w-full border rounded-xl p-2" value={checkpoint} onChange={e => setCheckpoint(e.target.value)}>
+              <option value="flat2DAnimerge_v45Sharp [fe95063ba6]">flat2DAnimerge_v45Sharp</option>
+              <option value="AnythingXL_v50.safetensors [7f96a1a9ca]">AnythingXL_v50</option>
+            </select>
+          </label>
           <button
             onClick={handleSend}
             disabled={sending || !imgUrl}
             className="w-full px-3 py-2 rounded-2xl shadow border text-sm disabled:opacity-50"
-          >{sending?"送信中...":"Stable Diffusionに送信"}</button>
+          >{sending ? "送信中..." : "Stable Diffusionに送信"}</button>
         </div>
 
-        <div className="border rounded-2xl p-3">
-          <div className="text-sm font-semibold mb-2 text-center">結果</div>
-          <div className="grid grid-cols-1 gap-2 w-80">
-            {resultImages.map((b64, idx) => (
-              <img key={idx} src={`data:image/png;base64,${b64}`} alt={`result-${idx}`} className="m-10 rounded-xl" />
-            ))}
-            {resultImages.length > 0 && (
-              <button
-                onClick={async() => {setIsUploading(true);
-                                await uploadImageToDrive(parentFolderId || FOLDER_ID, `data:image/png;base64,${resultImages[0]}`, accessToken, `Inpaint_Image`);
-                                setIsUploading(false);}}
-                className="w-full px-3 py-2 rounded-2xl shadow border text-sm"
+        <div className="border rounded-2xl p-3 space-y-2">
 
-              >{isUploading ?
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                </div>:
-                "Google Driveにアップロード"}
-              </button>
-            )}
-            
+          {maskList.map((maskObj, idx) => (
+            <div key={idx} className="flex flex-row items-center gap-4 border-b pb-4">
+              <div className="relative w-24 h-24 rounded border overflow-hidden flex items-center justify-center">
+                {/* 元画像を背景に表示（プレビュー風） */}
+                <img
+                  src={imgUrl}
+                  alt="元画像"
+                  className="absolute inset-0 w-full h-full object-contain"
+                  style={{ opacity: 1 }}
+                />
+                {/* マスク画像を重ねて表示 */}
+                <img
+                  src={maskObj.mask}
+                  alt={`mask-${idx}`}
+                  className="relative w-full h-full object-contain"
+                  style={{ opacity: 0.4, mixBlendMode: "lighten" }}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs mb-1">プロンプト</label>
+                <textarea
+                  className="w-full border rounded-xl p-2 text-sm mb-2"
+                  rows={4}
+                  value={maskObj.prompt}
+                  onChange={e => updateMaskPrompt(idx, e.target.value)}
+                  placeholder="このマスク用プロンプト"
+                />
+                <label className="block text-xs mb-1">ネガティブ</label>
+                <textarea
+                  className="w-full border rounded-xl p-2 text-sm"
+                  rows={3}
+                  value={maskObj.negative_prompt}
+                  onChange={e => updateMaskNegPrompt(idx, e.target.value)}
+                  placeholder="このマスク用ネガティブ"
+                />
+              </div>
+              <button
+                onClick={() => deleteMask(idx)}
+                className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs ml-2"
+              >削除</button>
+            </div>
+          ))}
+          {/* 全マスクで逐次生成ボタン（結果欄の一番下に1つだけ） */}
+          {maskList.length > 0 && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={async () => {
+                  setSending(true);
+                  let inputImgB64 = null;
+                  for (let i = 0; i < maskList.length; i++) {
+                    const resultB64 = await handleSendForMask(maskList[i], inputImgB64);
+                    inputImgB64 = resultB64; // 次のマスクの入力画像に
+                  }
+                  setSending(false);
+                }}
+                disabled={sending || maskList.length === 0}
+                className="px-4 py-2 rounded-2xl shadow border text-sm bg-green-200 font-semibold"
+              >{sending ? "全マスク逐次生成中..." : "全マスクで逐次生成"}</button>
+            </div>
+          )}
+          <div className="text-sm font-semibold mb-2 text-center">結果</div>
+          <div className="flex flex-col items-center justify-center w-full">
+            <div className="grid grid-cols-1 gap-2 w-80 flex items-center justify-center">
+              {resultImages[0] && (
+                <img
+                  src={`data:image/png;base64,${resultImages[0]}`}
+                  alt="result-0"
+                  className="rounded-xl"
+                />
+              )}
+              {resultImages.length > 0 && (
+                <button
+                  onClick={async () => {
+                    setIsUploading(true);
+                    await uploadImageToDrive(parentFolderId || FOLDER_ID, `data:image/png;base64,${resultImages[0]}`, accessToken, `Inpaint_Image`);
+                    setIsUploading(false);
+                  }}
+                  className="w-full px-3 py-2 rounded-2xl shadow border text-sm"
+                >{isUploading ?
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div> :
+                  "Google Driveにアップロード"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
