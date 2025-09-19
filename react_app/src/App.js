@@ -4,6 +4,7 @@ import Login from './components/modules/Login';
 import PC from './components/modules/PC';
 import Header from './components/modules/Header';
 import Camera from './components/modules/Camera';
+import Experiment from './components/modules/Experiment';
 import Home from './Home';
 
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/camera" element={<Camera />} />
           <Route path="/pc" element={<PC />} />
+          <Route path="/experiment" element={<Experiment />} />
         </Routes>
       </BrowserRouter>
     </>

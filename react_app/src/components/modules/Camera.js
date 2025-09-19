@@ -81,8 +81,8 @@ function Camera() {
   };
 
   return (
-    <div>
-      <h1 style={{textAlign: "center"}}>写真をアップロードしてね！</h1>
+    <div className="w-full flex flex-col items-center">
+      <h1 className="text-center text-xl font-bold m-8">写真をアップロードしてね！</h1>
 
       {!accessToken ? (
         <StitchButton onClick={handleLogin}>Googleにログイン</StitchButton>
@@ -90,58 +90,45 @@ function Camera() {
         <StitchButton onClick={handleTakePhoto} disabled={isUploading}>写真を撮る</StitchButton>
       )}
 
-      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "30vw",
-            height: "500px",
-            border: "2px dashed gray",
-            padding: "10px",
-          }}
-        >
+      <div className="flex justify-center w-full m-6">
+        <div className="flex justify-center items-center w-[500px] h-[500px] border-2 border-dashed border-gray-400 p-2">
           {imagePreviewUrl && (
             <img
               src={imagePreviewUrl}
               alt="preview"
-              style={{ maxWidth: "300px", width: "100%", height: "auto" }}
+              className="max-w-[300px] w-full h-auto"
             />
           )}
         </div>
       </div>
 
       {photoDataUrl && !folderName && (
-        <StitchButton onClick={handleUpload} disabled={isUploading} style={{ marginTop: "20px" }}>
+        <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
           アップロード
         </StitchButton>
       )}
+
       {isUploading && (
-        <div id="fullOverlay">
-          <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <div id="fullOverlay" className="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">
+          <div className="text-center mt-5">
             <div className="spinner-container">
               <div className="spinner-flip">
                 <div className="spinner-face spinner-front">
-                  <img src="ai-cheki.jpg" alt="Front" />
+                  <img src="ai-cheki.jpg" alt="Front" className="w-full h-full object-cover rounded-xl" />
                 </div>
                 <div className="spinner-face spinner-back">
-                  <img src="real.jpg" alt="Back" />
+                  <img src="real.jpg" alt="Back" className="w-full h-full object-cover rounded-xl" />
                 </div>
-                
+              </div>
+              <p className="mt-2 text-white text-xl font-semibold">アップロード中...</p>
             </div>
-            <p style={{ marginTop: "10px", color: "white", fontSize: "1.5rem" }}>アップロード中...</p>
           </div>
-          
         </div>
-        </div>
-
       )}
 
-
       {folderName && (
-        <p style={{ display: "flex", justifyContent: "center", marginTop: "20px", fontWeight: "bold" }}>
-          あなたの待ち受け番号は <span style={{ color: "#0070f3" }}>{folderName}</span> です
+        <p className="flex justify-center mt-5 font-bold">
+          あなたの待ち受け番号は <span className="text-blue-600 ml-2">{folderName}</span> です
         </p>
       )}
     </div>

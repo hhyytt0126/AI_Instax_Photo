@@ -59,45 +59,45 @@ export default function PC() {
       await fetchSubfolderContents(folderId);
     }
   };
-const handleGenerateFromUrl = async (imageUrl, parentFolderId, payload) => {
-  setGenerating(true);
-  
-  try {
-    const result = await generateImageFromAPI({
-      imageUrl,
-      payload,
-      driveFolderId: parentFolderId,
-      accessToken: token
-    });
-    console.log('Generating image from URL:', imageUrl, 'in folder:', parentFolderId, 'with payload:', payload);
-    console.log('Image generation result:', result);
-    if (result.success) {
-      const newFileId = result.fileId;
-      // ① 新ファイルを取得
-      const newFile = await fetchFileById(newFileId);
-      console.log(files, parentFolderId, newFile);
-      // ② files ステートの先頭に追加
-      // setFiles(prevFiles => [newFile, ...prevFiles]);
-      if (parentFolderId === FOLDER_ID) {
-        setFiles(prevFiles => [newFile, ...prevFiles]);
-      }
+  const handleGenerateFromUrl = async (imageUrl, parentFolderId, payload) => {
+    setGenerating(true);
 
-      // ④ サブフォルダの場合は subfolderContents に追加
-      else {
-        // subfolderContents を更新する関数が useDriveFiles にあると仮定
-        setExpandedFolders(prev => ({ ...prev, [parentFolderId]: true }));
-        setSubfolderContents(prev => ({
-          ...prev,
-          [parentFolderId]: [newFile, ...(prev[parentFolderId] || [])]
-        }));
-      }      
-      // プレビュー用 URL 設定などはお好みで
-      setGeneratedImageUrl(`https://drive.google.com/uc?id=${newFileId}`);
+    try {
+      const result = await generateImageFromAPI({
+        imageUrl,
+        payload,
+        driveFolderId: parentFolderId,
+        accessToken: token
+      });
+      console.log('Generating image from URL:', imageUrl, 'in folder:', parentFolderId, 'with payload:', payload);
+      console.log('Image generation result:', result);
+      if (result.success) {
+        const newFileId = result.fileId;
+        // ① 新ファイルを取得
+        const newFile = await fetchFileById(newFileId);
+        console.log(files, parentFolderId, newFile);
+        // ② files ステートの先頭に追加
+        // setFiles(prevFiles => [newFile, ...prevFiles]);
+        if (parentFolderId === FOLDER_ID) {
+          setFiles(prevFiles => [newFile, ...prevFiles]);
+        }
+
+        // ④ サブフォルダの場合は subfolderContents に追加
+        else {
+          // subfolderContents を更新する関数が useDriveFiles にあると仮定
+          setExpandedFolders(prev => ({ ...prev, [parentFolderId]: true }));
+          setSubfolderContents(prev => ({
+            ...prev,
+            [parentFolderId]: [newFile, ...(prev[parentFolderId] || [])]
+          }));
+        }
+        // プレビュー用 URL 設定などはお好みで
+        setGeneratedImageUrl(`https://drive.google.com/uc?id=${newFileId}`);
+      }
+    } finally {
+      setGenerating(false);
     }
-  } finally {
-    setGenerating(false);
-  }
-};
+  };
   const handlePreviewImage = (fileId) => {
     const viewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
     setPreviewImageUrl(viewUrl); // モーダルに表示
@@ -139,7 +139,7 @@ const handleGenerateFromUrl = async (imageUrl, parentFolderId, payload) => {
             handlePreviewImage={handlePreviewImage}
             handleUploadGeneratedImage={handleUploadGeneratedImage}
             generating={generating}
-            rootFolderId={FOLDER_ID}       
+            rootFolderId={FOLDER_ID}
           />
           <GeneratedImageSection
             generatedImageUrl={generatedImageUrl}

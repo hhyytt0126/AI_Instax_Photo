@@ -7,12 +7,29 @@ export function convertToViewLink(downloadUrl) {
   const fileId = match[1];
   return `https://drive.google.com/file/d/${fileId}/preview`;
 }
+export async function fetchDriveImageBlobUrl(fileId, accessToken) {
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`画像取得失敗: ${res.status} ${res.statusText}`);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
 
+export async function getDriveFileId(fileUrl) {
+  const match = fileUrl.match(/\/d\/([^/]+)/) || fileUrl.match(/id=([^&]+)/);
+  return match ? match[1] : null;
+}
 export function convertToPreviewLink(downloadUrl) {
   const match = downloadUrl.match(/id=([^&]+)/);
   if (!match) return null;
   const fileId = match[1];
-  return `https://lh3.googleusercontent.com/d${fileId}`;
+  return `https://drive.google.com/uc?id=${fileId}`;
 }
 export function useDriveFiles(gapiClient, PAGE_SIZE = 100) {
   const [files, setFiles] = useState([]); // トップレベルのファイル一覧
