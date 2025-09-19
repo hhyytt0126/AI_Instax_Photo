@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../css/FileList.css';
 import GenerateModal from './GenerateModal';
-import StitchImages from './StitchImages';
 
 export default function FileList({
   files,
@@ -17,10 +16,7 @@ export default function FileList({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [modalFile, setModalFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  
-  // チェキフォーマット生成用モーダル表示制御
-  const [showStitchModal, setShowStitchModal] = useState(false);
-  const [stitchImages, setStitchImages] = useState([null, null]);
+
   const IMGLENGTH = 3;
 
   const toggleFileSelection = (fileId) => {
@@ -32,27 +28,7 @@ export default function FileList({
           : prev
     );
   };
-  // 2枚選択時にチェキフォーマット生成ボタンを表示
-  const handleStitchImages = () => {
-    if (selectedFiles.length === 2) {
-      // Driveファイル情報からwebContentLinkを抽出
-      const selected = files
-        .flatMap(file => {
-          if (file.mimeType.includes('folder')) {
-            const children = subfolderContents[file.id] || [];
-            return children.filter(child => selectedFiles.includes(child.id));
-          } else {
-            return selectedFiles.includes(file.id) ? [file] : [];
-          }
-        });
-      const urls = selected.map(f => f.webContentLink);
-      if (urls.length === 2) {
-        setStitchImages(urls);
-        setShowStitchModal(true);
-        // 選択状態を維持（何もしない＝そのまま）
-      }
-    }
-  };
+
   const renderFiles = (fileList) => (
     <ul className="folder-list">
       {fileList.map(file => {
@@ -115,8 +91,6 @@ export default function FileList({
                             >
                               {generating ? '生成中...' : 'この画像で生成'}
                             </button>
-                            {/* チェキフォーマット生成ボタン */}
-                            {/* チェキフォーマット生成ボタン（未使用のhandleStitchImage呼び出しを削除） */}
                             {modalFile?.id === child.id && showModal && (
                               <GenerateModal
                                 imageUrl={child.webContentLink}
@@ -145,13 +119,13 @@ export default function FileList({
                       </div>
                     ))}
 
-                    {selectedFiles.length === 2 && (
+                    {selectedInFolder.length === IMGLENGTH && (
                       <button
-                        className="btn btn-stitch"
-                        style={{ marginTop: '0.5rem', background: '#e0e', color: '#fff' }}
-                        onClick={handleStitchImages}
+                        className="btn btn-generate"
+                        onClick={() => console.log('選択されたファイルID：', selectedInFolder.map(f => f.id))}
+                        style={{ marginTop: '0.5rem' }}
                       >
-                        選択画像でチェキ生成
+                        AIチェキを作成
                       </button>
                     )}
                   </div>
@@ -209,18 +183,5 @@ export default function FileList({
     </ul>
   );
 
-    return (
-    <>
-      {renderFiles(files)}
-      {/* StitchImagesモーダル表示 */}
-      {showStitchModal && (
-        <div className="modal-bg" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.4)', zIndex:1000 }}>
-          <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', padding:24, borderRadius:8 }}>
-            <button style={{ float:'right' }} onClick={()=>setShowStitchModal(false)}>閉じる</button>
-            <StitchImages imageUrls={stitchImages} />
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <>{renderFiles(files)}</>;
 }
