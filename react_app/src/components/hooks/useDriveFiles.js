@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+export { access_token } from './useGoogleAuth';
 export function convertToViewLink(downloadUrl) {
   const match = downloadUrl.match(/id=([^&]+)/);
   if (!match) return null;
@@ -19,6 +20,41 @@ export async function fetchDriveImageBlobUrl(fileId, accessToken) {
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+/**
+ * BlobデータをGoogle Driveの指定したフォルダにアップロードする
+ * @param {string} parentFolderId - アップロード先のフォルダID
+ * @param {Blob} blob - アップロードする画像のBlobデータ
+ * @param {string} accessToken - Google APIのアクセストークン
+ * @param {string} fileName - 保存するファイル名
+ * @returns {Promise<object>} - アップロードされたファイルのメタデータ
+ */
+export async function uploadBlobToDrive(parentFolderId, blob, accessToken, fileName) {
+  const metadata = {
+    name: fileName,
+    parents: [parentFolderId],
+    mimeType: blob.type,
+  };
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', blob);
+
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(`アップロード失敗: ${error.error.message}`);
+  }
+
+  return res.json();
 }
 
 export async function getDriveFileId(fileUrl) {
@@ -66,13 +102,13 @@ export function useDriveFiles(gapiClient, PAGE_SIZE = 100) {
   };
 
   // サブフォルダ内ファイル一覧取得
-  const fetchSubfolderContents = async (folderId) => {
+  const fetchSubfolderContents = async (folderId, force = false) => {
     if (!gapiClient || !gapiClient.drive) {
       console.error('gapiClient が未初期化です');
       return;
     }
 
-    if (subfolderContents[folderId]) return; // 既に取得済みなら再取得しない
+    if (subfolderContents[folderId] && !force) return; // 既に取得済みで、強制再取得でないなら再取得しない
 
     setLoading(true);
     try {

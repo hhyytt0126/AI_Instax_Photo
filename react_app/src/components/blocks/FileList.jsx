@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import '../css/FileList.css';
 import GenerateModal from './GenerateModal';
+import StitchImages from './StitchImages';
+import { fetchDriveImageBlobUrl, access_token } from '../hooks/useDriveFiles';
 
 export default function FileList({
   files,
@@ -11,13 +13,19 @@ export default function FileList({
   handleDeleteFile,
   handlePreviewImage,
   generating,
-  rootFolderId
+  rootFolderId,
+  onRefreshFolder // 親からファイルリスト再取得関数を受け取る
 }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [modalFile, setModalFile] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  // チェキフォーマット生成用モーダル表示制御
+  const [showStitchModal, setShowStitchModal] = useState(false);
+  const [stitchImages, setStitchImages] = useState([]);
+  const [uploadFolderId, setUploadFolderId] = useState(null);
+  const [isStitching, setIsStitching] = useState(false);
 
-  const IMGLENGTH = 3;
+  const IMGLENGTH = 3; // 連結する画像の枚数
 
   const toggleFileSelection = (fileId) => {
     setSelectedFiles(prev =>
@@ -28,6 +36,51 @@ export default function FileList({
           : prev
     );
   };
+
+  const handleStitchImages = async () => {
+    if (selectedFiles.length !== IMGLENGTH) return;
+
+    setIsStitching(true);
+
+    // 選択された最初のファイルが含まれるフォルダIDを特定する
+    let parentFolderId = null;
+    for (const folderId in subfolderContents) {
+      if (subfolderContents[folderId].some(file => file.id === selectedFiles[0])) {
+        parentFolderId = folderId;
+        break;
+      }
+    }
+    if (!parentFolderId) {
+        alert('アップロード先のフォルダを特定できませんでした。');
+        setIsStitching(false);
+        return;
+    }
+
+    try {
+      const blobUrls = await Promise.all(
+        selectedFiles.map(fileId => fetchDriveImageBlobUrl(fileId, access_token))
+      );
+      setStitchImages(blobUrls);
+      setUploadFolderId(parentFolderId);
+      setShowStitchModal(true);
+    } catch (error) {
+      console.error('画像の取得または連結に失敗しました:', error);
+      alert('画像の取得または連結に失敗しました。');
+    } finally {
+      setIsStitching(false);
+    }
+  };
+
+  const handleUploadComplete = async () => {
+    setShowStitchModal(false);
+    setSelectedFiles([]); // 選択状態をリセット
+    if (onRefreshFolder && uploadFolderId) {
+      await onRefreshFolder(uploadFolderId); // ファイルリストを再取得
+    }
+    alert('アップロードに成功し、リストを更新しました！');
+  };
+
+
 
   const renderFiles = (fileList) => (
     <ul className="folder-list">
@@ -122,10 +175,11 @@ export default function FileList({
                     {selectedInFolder.length === IMGLENGTH && (
                       <button
                         className="btn btn-generate"
-                        onClick={() => console.log('選択されたファイルID：', selectedInFolder.map(f => f.id))}
+                        onClick={handleStitchImages}
                         style={{ marginTop: '0.5rem' }}
+                        disabled={isStitching}
                       >
-                        AIチェキを作成
+                        {isStitching ? '準備中...' : 'AIチェキを作成'}
                       </button>
                     )}
                   </div>
@@ -183,5 +237,23 @@ export default function FileList({
     </ul>
   );
 
-  return <>{renderFiles(files)}</>;
+  return (
+    <>
+      {renderFiles(files)}
+      {showStitchModal && (
+        <div className="modal-bg" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: 24, borderRadius: 8, position: 'relative' }}>
+            <button style={{ position: 'absolute', top: 8, right: 8, cursor: 'pointer', border: 'none', background: 'transparent', fontSize: '1.5rem' }} onClick={() => setShowStitchModal(false)}>
+              &times;
+            </button>
+            <StitchImages
+              imageUrls={stitchImages}
+              parentFolderId={uploadFolderId}
+              onUploadComplete={handleUploadComplete}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
