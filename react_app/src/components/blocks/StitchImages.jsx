@@ -1,18 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { uploadBlobToDrive, access_token } from '../hooks/useDriveFiles';
 import logoSrc from '../../logo.svg';
 
-export default function StitchImages({ imageUrls, parentFolderId, onUploadComplete }) {
+export default function StitchImages({ imageUrls, parentFolderId, parentFolderName, onUploadComplete }) {
   // 2枚の生成画像とアップロード状態を管理
   const [generatedImages, setGeneratedImages] = useState({ real: null, ai: null });
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
+    const images = []; // imagesをuseEffectスコープに移動
+
     if (!imageUrls || imageUrls.length < 3) return;
     if (Object.values(generatedImages).every(img => img !== null)) return; // 既に生成済みなら再実行しない
-
-    const images = [];
+    
+    // フォント読み込み後に画像処理を開始
     const logoImage = new Image();
     let loadedImages = 0;
     const totalImagesToLoad = imageUrls.length + 1; // 3枚の画像 + ロゴ
@@ -28,11 +30,9 @@ export default function StitchImages({ imageUrls, parentFolderId, onUploadComple
         if (loadedImages === totalImagesToLoad) {
           // すべての画像が読み込まれたら描画
           drawImages(logoImage);
-        }
+      }
       };
-      img.onerror = () => {
-        console.error(`画像の読み込みに失敗しました: ${url}`);
-      };
+      img.onerror = () => console.error(`画像の読み込みに失敗しました: ${url}`);
     });
     
     // ロゴ画像を読み込む
@@ -58,7 +58,7 @@ export default function StitchImages({ imageUrls, parentFolderId, onUploadComple
       }
 
       // チェキ風画像を生成するヘルパー関数
-      const makeChekiFormat = (img, type) => {
+      const makeChekiFormat = (img, type, textToWrite) => {
         // 元画像サイズ
         const iw = img.width;
         const ih = img.height;
@@ -117,12 +117,38 @@ export default function StitchImages({ imageUrls, parentFolderId, onUploadComple
           tempCtx.drawImage(qrCode, qrX2, qrY, qrSize, qrSize);
         }
 
+        // aiImageの場合のみ、帯に「No:」+フォルダ名を描画
+        if (type === 'ai' && textToWrite) {
+          const noText = `No:${textToWrite}`;
+          const fontSize = Math.round(iw * 7 / 46);
+          tempCtx.font = `${fontSize}px "Comic Sans MS", "Chalkduster", "cursive"`;
+          tempCtx.textAlign = 'left';
+
+          // 描画位置を計算
+          const textMetrics = tempCtx.measureText(noText);
+          const textWidth = textMetrics.width;
+          const textHeight = fontSize; // フォントサイズを高さとして近似
+
+          // 貼り付け座標 (Pythonコードの im_new_w*109/127, im_new_w*22/127 を参考)
+          const pasteX = Math.round(outW * 109 / 127);
+          const pasteY = Math.round(outW * 22 / 127);
+
+          tempCtx.save(); // 現在の状態を保存
+          tempCtx.translate(pasteX + textHeight, pasteY); // 回転の中心を移動
+          tempCtx.rotate(90 * Math.PI / 180); // 90度回転
+          tempCtx.fillStyle = 'black';
+          tempCtx.fillText(noText, 0, 0); // 新しい原点から描画
+          tempCtx.restore(); // 保存した状態に戻す
+        }
+
+
+
         return tempCanvas; // 加工済みのCanvas要素を返す
       };
 
       // realImageとaiImageをそれぞれ加工
-      const chekiCanvasForReal = makeChekiFormat(realImage, 'real');
-      const chekiCanvasForAi = makeChekiFormat(aiImage, 'ai');
+      const chekiCanvasForReal = makeChekiFormat(realImage, 'real', parentFolderName);
+      const chekiCanvasForAi = makeChekiFormat(aiImage, 'ai', parentFolderName);
 
       // StateにDataURLとして保存
       setGeneratedImages({
@@ -132,7 +158,7 @@ export default function StitchImages({ imageUrls, parentFolderId, onUploadComple
 
       // アップロード状態をリセット
       setUploadSuccess(false);
-    };
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrls, generatedImages]);
 
   // DataURLをBlobに変換するヘルパー関数
@@ -174,25 +200,40 @@ export default function StitchImages({ imageUrls, parentFolderId, onUploadComple
   return (
     <div style={{ padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem' }}>
-        {Object.entries(generatedImages).map(([type, src]) => (
-          src && (
-            <div key={type} style={{ textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                {type === 'real' ? 'Real Image Ver.' : 'AI Image Ver.'}
-              </h3>
-              <img
-                src={src}
-                alt={`${type} cheki`}
-                style={{
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  maxWidth: '250px',
-                  height: 'auto'
-                }}
-              />
-            </div>
-          )
-        ))}
+        {generatedImages.ai && (
+          <div key="ai" style={{ textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              AI Image Ver.
+            </h3>
+            <img
+              src={generatedImages.ai}
+              alt="AI cheki"
+              style={{
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                maxWidth: '500px',
+                height: 'auto'
+              }}
+            />
+          </div>
+        )}
+        {generatedImages.real && (
+          <div key="real" style={{ textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Real Image Ver.
+            </h3>
+            <img
+              src={generatedImages.real}
+              alt="Real cheki"
+              style={{
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                maxWidth: '500px',
+                height: 'auto'
+              }}
+            />
+          </div>
+        )}
       </div>
       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <button

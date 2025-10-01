@@ -23,9 +23,10 @@ export default function FileList({
   const [showStitchModal, setShowStitchModal] = useState(false);
   const [stitchImages, setStitchImages] = useState([]);
   const [uploadFolderId, setUploadFolderId] = useState(null);
+  const [parentFolderName, setParentFolderName] = useState('');
   const [isStitching, setIsStitching] = useState(false);
 
-  const IMGLENGTH = 3; // 連結する画像の枚数
+  const IMGLENGTH = 2; // 連結する画像の枚数を2枚に変更
 
   const toggleFileSelection = (fileId) => {
     setSelectedFiles(prev =>
@@ -45,8 +46,10 @@ export default function FileList({
     // 選択された最初のファイルが含まれるフォルダIDを特定する
     let parentFolderId = null;
     for (const folderId in subfolderContents) {
-      if (subfolderContents[folderId].some(file => file.id === selectedFiles[0])) {
+      const folder = files.find(f => f.id === folderId);
+      if (folder && subfolderContents[folderId].some(file => file.id === selectedFiles[0])) {
         parentFolderId = folderId;
+        setParentFolderName(folder.name);
         break;
       }
     }
@@ -56,12 +59,25 @@ export default function FileList({
         return;
     }
 
+    // 親フォルダ内のファイルリストから "qr.png" を探す
+    const folderFiles = subfolderContents[parentFolderId];
+    const qrFile = folderFiles.find(file => file.name === 'qr.png');
+
+    if (!qrFile) {
+      alert('フォルダ内に "qr.png" が見つかりませんでした。');
+      setIsStitching(false);
+      return;
+    }
+
+    const allFileIds = [...selectedFiles, qrFile.id];
+
     try {
       const blobUrls = await Promise.all(
-        selectedFiles.map(fileId => fetchDriveImageBlobUrl(fileId, access_token))
+        allFileIds.map(fileId => fetchDriveImageBlobUrl(fileId, access_token))
       );
       setStitchImages(blobUrls);
       setUploadFolderId(parentFolderId);
+      // setParentFolderNameはhandleStitchImagesの冒頭で設定済み
       setShowStitchModal(true);
     } catch (error) {
       console.error('画像の取得または連結に失敗しました:', error);
@@ -249,6 +265,7 @@ export default function FileList({
             <StitchImages
               imageUrls={stitchImages}
               parentFolderId={uploadFolderId}
+              parentFolderName={parentFolderName}
               onUploadComplete={handleUploadComplete}
             />
           </div>
