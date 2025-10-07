@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { uploadBlobToDrive, access_token } from '../hooks/useDriveFiles';
 import logoSrc from '../../logo.svg';
-
-export default function StitchImages({ imageUrls, parentFolderId, parentFolderName, onUploadComplete }) {
+import { fetchFileById } from "../hooks/useDriveFiles";
+export default function StitchImages({ imageUrls, parentFolderId, parentFolderName, onUploadComplete, setExpandedFolders, setSubfolderContents }) {
   // 2枚の生成画像とアップロード状態を管理
   const [generatedImages, setGeneratedImages] = useState({ real: null, ai: null });
+  // setSubfolderContentsをpropsで受け取れるように
+  // ...existing code...
+  // setSubfolderContentsをpropsで受け取る
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
@@ -13,7 +16,7 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
 
     if (!imageUrls || imageUrls.length < 3) return;
     if (Object.values(generatedImages).every(img => img !== null)) return; // 既に生成済みなら再実行しない
-    
+
     // フォント読み込み後に画像処理を開始
     const logoImage = new Image();
     let loadedImages = 0;
@@ -30,11 +33,11 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
         if (loadedImages === totalImagesToLoad) {
           // すべての画像が読み込まれたら描画
           drawImages(logoImage);
-      }
+        }
       };
       img.onerror = () => console.error(`画像の読み込みに失敗しました: ${url}`);
     });
-    
+
     // ロゴ画像を読み込む
     logoImage.src = logoSrc;
     logoImage.onload = () => {
@@ -125,8 +128,6 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
           tempCtx.textAlign = 'left';
 
           // 描画位置を計算
-          const textMetrics = tempCtx.measureText(noText);
-          const textWidth = textMetrics.width;
           const textHeight = fontSize; // フォントサイズを高さとして近似
 
           // 貼り付け座標 (Pythonコードの im_new_w*109/127, im_new_w*22/127 を参考)
@@ -187,7 +188,28 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
         return uploadBlobToDrive(parentFolderId, blob, access_token, fileName);
       });
 
-      await Promise.all(uploadPromises);
+      const results = await Promise.all(uploadPromises);
+      console.log('アップロード結果:', results);
+      // 新しくアップロードしたファイルIDをExpandedFoldersに追加
+      if (setExpandedFolders && results) {
+        const newIds = results.map(r => r.id).filter(Boolean);
+        setExpandedFolders(prev => {
+          return {
+            ...prev,
+            [parentFolderId]: [...(Array.isArray(prev[parentFolderId]) ? prev[parentFolderId] : []), ...newIds]
+          };
+        });
+      }
+      // 新しくアップロードしたファイル情報をsubfolderContentsにも追加
+      if (typeof setSubfolderContents === 'function' && results) {
+        // resultsのidからDrive APIでファイル情報を取得し、subfolderContentsに追加
+        const fileIds = results.map(r => r.id).filter(Boolean);
+        const fileInfoList = await Promise.all(fileIds.map(id => fetchFileById(id)));
+        setSubfolderContents(prev => ({
+          ...prev,
+          [parentFolderId]: [...(Array.isArray(prev[parentFolderId]) ? prev[parentFolderId] : []), ...fileInfoList]
+        }));
+      }
       onUploadComplete?.(); // 親に完了を通知してモーダルを閉じる
     } catch (error) {
       console.error('アップロードエラー:', error);

@@ -3,11 +3,14 @@ import '../css/FileList.css';
 import GenerateModal from './GenerateModal';
 import StitchImages from './StitchImages';
 import { fetchDriveImageBlobUrl, access_token } from '../hooks/useDriveFiles';
+import { handlePrintImage } from '../hooks/fileListUtils';
 
 export default function FileList({
   files,
   subfolderContents,
   expandedFolders,
+  setSubfolderContents,
+  setExpandedFolders,
   toggleFolder,
   handleGenerateFromUrl,
   handleDeleteFile,
@@ -54,9 +57,9 @@ export default function FileList({
       }
     }
     if (!parentFolderId) {
-        alert('アップロード先のフォルダを特定できませんでした。');
-        setIsStitching(false);
-        return;
+      alert('アップロード先のフォルダを特定できませんでした。');
+      setIsStitching(false);
+      return;
     }
 
     // 親フォルダ内のファイルリストから "qr.png" を探す
@@ -90,10 +93,6 @@ export default function FileList({
   const handleUploadComplete = async () => {
     setShowStitchModal(false);
     setSelectedFiles([]); // 選択状態をリセット
-    if (onRefreshFolder && uploadFolderId) {
-      await onRefreshFolder(uploadFolderId); // ファイルリストを再取得
-    }
-    alert('アップロードに成功し、リストを更新しました！');
   };
 
 
@@ -136,7 +135,7 @@ export default function FileList({
                         <span>{child.name}</span>
 
                         {child.webContentLink && (
-                          
+
                           <>
                             <button
                               className="btn btn-preview"
@@ -189,14 +188,24 @@ export default function FileList({
                     ))}
 
                     {selectedInFolder.length === IMGLENGTH && (
-                      <button
-                        className="btn btn-generate"
-                        onClick={handleStitchImages}
-                        style={{ marginTop: '0.5rem' }}
-                        disabled={isStitching}
-                      >
-                        {isStitching ? '準備中...' : 'AIチェキを作成'}
-                      </button>
+                      <>
+                        <button
+                          className="btn btn-generate"
+                          onClick={handleStitchImages}
+                          style={{ marginTop: '0.5rem' }}
+                          disabled={isStitching}
+                        >
+                          {isStitching ? '準備中...' : 'AIチェキを作成'}
+                        </button>
+
+                        <button
+                          className="btn btn-printImage"
+                          onClick={() => handlePrintImage(selectedInFolder.map(f => f.id))}
+                        >
+                          印刷
+                        </button>
+                      </>
+
                     )}
                   </div>
                 )}
@@ -267,6 +276,8 @@ export default function FileList({
               parentFolderId={uploadFolderId}
               parentFolderName={parentFolderName}
               onUploadComplete={handleUploadComplete}
+              setExpandedFolders={setExpandedFolders}
+              setSubfolderContents={setSubfolderContents}
             />
           </div>
         </div>
