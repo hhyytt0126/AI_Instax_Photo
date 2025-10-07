@@ -67,6 +67,15 @@ export function convertToPreviewLink(downloadUrl) {
   const fileId = match[1];
   return `https://drive.google.com/uc?id=${fileId}`;
 }
+
+export async function fetchFileById(fileId) {
+  // fields は必要な情報だけ抜き出せます。たとえば id, name, mimeType, webViewLink, parents など。
+  const res = await window.gapi.client.drive.files.get({
+    fileId,
+    fields: 'id, name, mimeType, webContentLink, webViewLink, thumbnailLink, parents'
+  });
+  return res.result;
+}
 export function useDriveFiles(gapiClient, PAGE_SIZE = 100) {
   const [files, setFiles] = useState([]); // トップレベルのファイル一覧
   const [subfolderContents, setSubfolderContents] = useState({}); // フォルダIDをキーにファイル配列を格納
@@ -157,12 +166,12 @@ export function useDriveFiles(gapiClient, PAGE_SIZE = 100) {
     }
   };
   async function fetchFileById(fileId) {
-  // fields は必要な情報だけ抜き出せます。たとえば id, name, mimeType, webViewLink, parents など。
-  const res = await window.gapi.client.drive.files.get({
-    fileId,
-    fields: 'id, name, mimeType, webContentLink, webViewLink, thumbnailLink, parents'
-  });
-  return res.result;
+    // fields は必要な情報だけ抜き出せます。たとえば id, name, mimeType, webViewLink, parents など。
+    const res = await window.gapi.client.drive.files.get({
+      fileId,
+      fields: 'id, name, mimeType, webContentLink, webViewLink, thumbnailLink, parents'
+    });
+    return res.result;
   }
   return {
     files,

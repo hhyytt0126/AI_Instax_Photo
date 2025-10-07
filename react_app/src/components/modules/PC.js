@@ -133,6 +133,8 @@ export default function PC() {
             files={files}
             subfolderContents={subfolderContents}
             expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
+            setSubfolderContents={setSubfolderContents}
             toggleFolder={toggleFolder}
             handleGenerateFromUrl={handleGenerateFromUrl}
             handleDeleteFile={handleDeleteFile}
