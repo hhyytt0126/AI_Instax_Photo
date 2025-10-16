@@ -51,14 +51,40 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
     const drawImages = (logo) => {
       // 画像をwidthの降順（大きい順）にソート
       const sortedImages = [...images].sort((a, b) => b.width - a.width);
-      const realImage = sortedImages[0];
-      const aiImage = sortedImages[1];
+      let realImage = sortedImages[0];
+      let aiImage = sortedImages[1];
       const qrCode = sortedImages[2]; // 3番目の画像をQRコードとして扱う
 
       if (!realImage || !aiImage || !qrCode) {
         console.error("画像が見つかりませんでした。");
         return;
       }
+
+      // 横長画像を90度回転させる関数
+      const rotateImageIfLandscape = (img) => {
+        if (img.width <= img.height) return img; // 縦長または正方形ならそのまま
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.height;
+        canvas.height = img.width;
+        const ctx = canvas.getContext('2d');
+        
+        // 90度回転して描画
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(90 * Math.PI / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        
+        // 回転後の画像を新しいImageオブジェクトとして返す
+        const rotatedImg = new Image();
+        rotatedImg.src = canvas.toDataURL();
+        rotatedImg.width = canvas.width;
+        rotatedImg.height = canvas.height;
+        return rotatedImg;
+      };
+
+      // 横長なら回転
+      realImage = rotateImageIfLandscape(realImage);
+      aiImage = rotateImageIfLandscape(aiImage);
 
       // チェキ風画像を生成するヘルパー関数
       const makeChekiFormat = (img, type, textToWrite) => {
