@@ -5,7 +5,7 @@ import ProgressModal from './ProgressModal';
 
 export default function GenerateModal({ imageUrl, onClose, onGenerate, generating }) {
   const [prompt, setPrompt] = useState("smile, anime-style, 8k, RAW photo, best quality, masterpiece, anime, clear,  best quality ,ultra high res");
-  const [negativePrompt, setNegativePrompt] = useState("EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly,　error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw.");
+  const [negativePrompt, setNegativePrompt] = useState("EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly, error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw.");
   const [steps, setSteps] = useState(20);
   const [cfgScale, setCfgScale] = useState(7);
   const [sampler, setSampler] = useState("DPM++ 2M Karras");

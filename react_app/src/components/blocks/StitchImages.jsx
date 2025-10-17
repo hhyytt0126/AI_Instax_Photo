@@ -60,21 +60,19 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
         return;
       }
 
-      // 横長画像を90度回転させる関数
-      const rotateImageIfLandscape = (img) => {
-        if (img.width <= img.height) return img; // 縦長または正方形ならそのまま
-
+      // 横長画像を回転させる関数
+      const rotateImage = (img, direction = 'clockwise') => {
         const canvas = document.createElement('canvas');
         canvas.width = img.height;
         canvas.height = img.width;
         const ctx = canvas.getContext('2d');
-        
-        // 90度回転して描画
+
+        const angle = direction === 'clockwise' ? 90 : -90;
+
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(90 * Math.PI / 180);
+        ctx.rotate(angle * Math.PI / 180);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-        // 回転後の画像を新しいImageオブジェクトとして返す
+
         const rotatedImg = new Image();
         rotatedImg.src = canvas.toDataURL();
         rotatedImg.width = canvas.width;
@@ -82,15 +80,15 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
         return rotatedImg;
       };
 
-      // 横長なら回転
-      realImage = rotateImageIfLandscape(realImage);
-      aiImage = rotateImageIfLandscape(aiImage);
-
       // チェキ風画像を生成するヘルパー関数
       const makeChekiFormat = (img, type, textToWrite) => {
-        // 元画像サイズ
-        const iw = img.width;
-        const ih = img.height;
+        const isLandscape = img.width > img.height;
+        // 横長画像の場合はtypeに応じて回転、そうでなければそのまま
+        const sourceImg = isLandscape
+          ? rotateImage(img, type === 'ai' ? 'counter-clockwise' : 'clockwise')
+          : img;
+        const iw = sourceImg.width;
+        const ih = sourceImg.height;
         let outW, outH, pasteX1, pasteY, pasteX2, bandW;
 
         if (type === 'real') {
@@ -118,26 +116,60 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
         tempCtx.fillStyle = '#fff';
         tempCtx.fillRect(0, 0, outW, outH);
         // 右端にカラー帯（ピンク）
-        if (type !== 'real') {
-          tempCtx.fillStyle = 'rgb(238,112,133)';
-          tempCtx.fillRect(outW - bandW, 0, bandW, outH);
-        }
+        // if (type !== 'real') {
+        //   tempCtx.fillStyle = 'rgb(238,112,133)';
+        //   tempCtx.fillRect(outW - bandW, 0, bandW, outH);
+        // }
         // 左右に画像を配置
-        tempCtx.drawImage(img, pasteX1, pasteY, iw, ih);
-        tempCtx.drawImage(img, pasteX2, pasteY, iw, ih);
+        tempCtx.drawImage(sourceImg, pasteX1, pasteY, iw, ih);
+        tempCtx.drawImage(sourceImg, pasteX2, pasteY, iw, ih);
 
-        // aiImageの場合のみロゴを貼り付け
+        // aiImageの場合ロゴのみを貼り付け
         if (type === 'ai') {
           const logoSize = Math.round(iw * 15 / 46);
           const logoY = Math.round(outH - (iw * 4 / 46) - (iw * 12.5 / 46));
           const logoX1 = Math.round(iw * 3.5 / 46);
           const logoX2 = Math.round(iw * 57.5 / 46);
-          tempCtx.drawImage(logo, logoX1, logoY, logoSize, logoSize);
-          tempCtx.drawImage(logo, logoX2, logoY, logoSize, logoSize);
+          if (isLandscape) {
+            // 横長画像ならロゴを回転させて貼り付け
+            tempCtx.save();
+            tempCtx.translate(logoX1 + logoSize / 2, logoY + logoSize / 2);
+            tempCtx.rotate(-90 * Math.PI / 180); // 逆向きに90度回転
+            tempCtx.drawImage(logo, -logoSize / 2, -logoSize / 2, logoSize, logoSize);
+            tempCtx.restore();
+            tempCtx.save();
+            tempCtx.translate(logoX2 + logoSize / 2, logoY + logoSize / 2);
+            tempCtx.rotate(-90 * Math.PI / 180); // 逆向きに90度回転
+            tempCtx.drawImage(logo, -logoSize / 2, -logoSize / 2, logoSize, logoSize);
+            tempCtx.restore();
+          } else {
+            tempCtx.drawImage(logo, logoX1, logoY, logoSize, logoSize);
+            tempCtx.drawImage(logo, logoX2, logoY, logoSize, logoSize);
+          }
         }
 
-        // realImageの場合のみQRコードを貼り付け
+        // realImageの場合ロゴ、QRコードを貼り付け
         if (type === 'real') {
+          const logoSize = Math.round(iw * 15 / 46);
+          const logoY = Math.round(outH - (iw * 4 / 46) - (iw * 12.5 / 46));
+          const logoX1 = Math.round(iw * 3.5 / 46 + bandW);
+          const logoX2 = Math.round(iw * 57.5 / 46 + bandW);
+          if (isLandscape) {
+            // 横長画像ならロゴを回転させて貼り付け
+            tempCtx.save();
+            tempCtx.translate(logoX1 + logoSize / 2, logoY + logoSize / 2);
+            tempCtx.rotate(90 * Math.PI / 180);
+            tempCtx.drawImage(logo, -logoSize / 2, -logoSize / 2, logoSize, logoSize);
+            tempCtx.restore();
+            tempCtx.save();
+            tempCtx.translate(logoX2 + logoSize / 2, logoY + logoSize / 2);
+            tempCtx.rotate(90 * Math.PI / 180);
+            tempCtx.drawImage(logo, -logoSize / 2, -logoSize / 2, logoSize, logoSize);
+            tempCtx.restore();
+          } else {
+            tempCtx.drawImage(logo, logoX1, logoY, logoSize, logoSize);
+            tempCtx.drawImage(logo, logoX2, logoY, logoSize, logoSize);
+          }
           const qrSize = Math.round(iw * 10 / 46);
           const qrY = Math.round(outH - (iw * 4 / 46) - qrSize);
           const qrX1 = Math.round(iw * 57 / 46);
