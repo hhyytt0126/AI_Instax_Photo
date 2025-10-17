@@ -7,6 +7,8 @@ import LoginCard from '../atoms/LoginCard';
 import FileList from '../blocks/FileList';
 import PreviewModal from '../atoms/PreviewModal';
 import GeneratedImageSection from '../atoms/GeneratedImageSection';
+import NotificationToast from '../atoms/NotificationToast';
+import NotificationLog from '../blocks/NotificationLog';
 import '../css/PC.css';
 import { database } from '../../firebase';
 import { ref, onValue, onChildAdded, update, remove } from 'firebase/database';
@@ -179,7 +181,12 @@ export default function PC() {
 
   return (
     <div>
-      <LogoutViewer token={token} onLogout={logout} />
+      <LogoutViewer
+        token={token}
+        onLogout={logout}
+        notificationCount={notifications.length}
+        onOpenNotificationLog={() => setShowNotificationLog(true)}
+      />
       {!token ? (
         <LoginCard onLogin={requestAccessToken} />
       ) : (
@@ -206,6 +213,15 @@ export default function PC() {
           <PreviewModal previewImageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />
         </>
       )}
+      <NotificationToast
+        notification={newNotification}
+        onClose={() => setNewNotification(null)}
+      />
+      <NotificationLog
+        notifications={notifications}
+        isOpen={showNotificationLog}
+        onClose={() => setShowNotificationLog(false)}
+      />
     </div>
   );
 }
