@@ -8,6 +8,8 @@ import {
 } from "../utils/googleDriveUtils";
 
 import StitchButton from "../atoms/StitchButton";
+import { database } from '../../firebase';
+import { ref, push, set } from 'firebase/database';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
@@ -57,8 +59,30 @@ function Camera() {
     });
   };
 
+  const sendNotification = async (folderId, folderName, photoCount) => {
+    try {
+      const notificationsRef = ref(database, 'notifications');
+      const newNotificationRef = push(notificationsRef);
+
+      await set(newNotificationRef, {
+        type: 'new_folder',
+        folderId: folderId,
+        folderName: folderName,
+        photoCount: photoCount,
+        timestamp: Date.now(),
+        completed: false,
+        read: false
+      });
+
+      console.log('通知送信成功:', { folderName, photoCount });
+    } catch (error) {
+      console.error('通知送信エラー:', error);
+    }
+  };
+
   const handleUpload = async () => {
     if (!photoDataUrl || !accessToken) return;
+    console.log('📸 選択された写真枚数:', photoCount);
     try {
       setIsUploading(true);
       await initializeGapi();
@@ -71,6 +95,8 @@ function Camera() {
 
       const qr = await generateQRCode(subFolderId);
       await uploadImageToDrive(subFolderId, qr, accessToken, "qr");
+
+      await sendNotification(subFolderId, newFolderName, photoCount);
 
       setFolderName(newFolderName);
     } catch (err) {
