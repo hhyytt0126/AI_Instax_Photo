@@ -7,7 +7,11 @@ import LoginCard from '../atoms/LoginCard';
 import FileList from '../blocks/FileList';
 import PreviewModal from '../atoms/PreviewModal';
 import GeneratedImageSection from '../atoms/GeneratedImageSection';
+import NotificationToast from '../atoms/NotificationToast';
+import NotificationLog from '../blocks/NotificationLog';
 import '../css/PC.css';
+import { database } from '../../firebase';
+import { ref, onValue, onChildAdded, update, remove } from 'firebase/database';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
@@ -34,6 +38,9 @@ export default function PC() {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationLog, setShowNotificationLog] = useState(false);
+  const [newNotification, setNewNotification] = useState(null);
 
   useEffect(() => {
     const initClient = async () => {
@@ -51,6 +58,56 @@ export default function PC() {
       window.gapi.client.setToken({ access_token: token });
       fetchFiles(FOLDER_ID, true);
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return; // ログインしていない場合は何もしない
+
+    const notificationsRef = ref(database, 'notifications');
+    const startTime = Date.now(); // 監視開始時刻
+
+    // 全通知を取得（通知ログ用）
+    const unsubscribeValue = onValue(notificationsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const notificationList = Object.entries(data).map(([id, value]) => ({
+          id,
+          ...value
+        })).sort((a, b) => b.timestamp - a.timestamp);
+
+        setNotifications(notificationList);
+        console.log('📋 通知履歴を取得:', notificationList.length, '件');
+      } else {
+        setNotifications([]);
+      }
+    });
+
+    // 新着通知を監視（トースト表示用）
+    const unsubscribeChild = onChildAdded(notificationsRef, (snapshot) => {
+      const notification = snapshot.val();
+      const notificationId = snapshot.key;
+
+      // 監視開始後の通知のみ処理（初回ロード時の古い通知を除外）
+      if (notification.timestamp > startTime - 5000) {
+        console.log('🔔 新着通知を受信:', notification);
+        setNewNotification({
+          id: notificationId,
+          ...notification
+        });
+
+        // ファイルリストを再取得
+        fetchFiles(FOLDER_ID, true);
+
+        // 5秒後にトーストを非表示
+        setTimeout(() => setNewNotification(null), 5000);
+      }
+    });
+
+    // クリーンアップ
+    return () => {
+      unsubscribeValue();
+      unsubscribeChild();
+    };
   }, [token]);
 
   const toggleFolder = async (folderId) => {
@@ -124,7 +181,12 @@ export default function PC() {
 
   return (
     <div>
-      <LogoutViewer token={token} onLogout={logout} />
+      <LogoutViewer
+        token={token}
+        onLogout={logout}
+        notificationCount={notifications.length}
+        onOpenNotificationLog={() => setShowNotificationLog(true)}
+      />
       {!token ? (
         <LoginCard onLogin={requestAccessToken} />
       ) : (
@@ -151,6 +213,15 @@ export default function PC() {
           <PreviewModal previewImageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />
         </>
       )}
+      <NotificationToast
+        notification={newNotification}
+        onClose={() => setNewNotification(null)}
+      />
+      <NotificationLog
+        notifications={notifications}
+        isOpen={showNotificationLog}
+        onClose={() => setShowNotificationLog(false)}
+      />
     </div>
   );
 }

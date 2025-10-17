@@ -1,7 +1,7 @@
 import React from 'react';
-import { FolderOpen, LogOut } from 'lucide-react';
+import { FolderOpen, LogOut, Bell } from 'lucide-react';
 
-export default function LogoutViewer({ token, onLogout }) {
+export default function LogoutViewer({ token, onLogout, notificationCount, onOpenNotificationLog }) {
   return (
     <div className="header-card">
       <div className="header-content">
@@ -15,10 +15,16 @@ export default function LogoutViewer({ token, onLogout }) {
           </div>
         </div>
         {token && (
-          <button onClick={onLogout} className="btn btn-logout">
-            <LogOut className="icon-small" />
-            <span>ログアウト</span>
-          </button>
+          <div className="flex gap-2">
+            <button onClick={onOpenNotificationLog} className="btn btn-primary">
+              <Bell className="icon-small" />
+              <span>通知ログ ({notificationCount})</span>
+            </button>
+            <button onClick={onLogout} className="btn btn-logout">
+              <LogOut className="icon-small" />
+              <span>ログアウト</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
