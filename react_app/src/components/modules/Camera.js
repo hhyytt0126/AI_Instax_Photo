@@ -19,6 +19,7 @@ function Camera() {
   const [tokenClient, setTokenClient] = useState(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
+  const [photoCount, setPhotoCount] = useState(1); // 写真枚数選択用
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
@@ -103,9 +104,23 @@ function Camera() {
       </div>
 
       {photoDataUrl && !folderName && (
-        <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
-          アップロード
-        </StitchButton>
+        <>
+          <div className="mb-4 w-full max-w-md">
+            <label className="block text-sm font-bold mb-2">写真枚数を選択：</label>
+            <select
+              value={photoCount}
+              onChange={(e) => setPhotoCount(Number(e.target.value))}
+              className="border rounded px-4 py-2 w-full"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                <option key={num} value={num}>{num}枚</option>
+              ))}
+            </select>
+          </div>
+          <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
+            アップロード
+          </StitchButton>
+        </>
       )}
 
       {isUploading && (
