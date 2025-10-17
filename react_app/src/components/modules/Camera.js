@@ -8,6 +8,8 @@ import {
 } from "../utils/googleDriveUtils";
 
 import StitchButton from "../atoms/StitchButton";
+import { database } from '../../firebase';
+import { ref, push, set } from 'firebase/database';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
@@ -19,6 +21,7 @@ function Camera() {
   const [tokenClient, setTokenClient] = useState(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
+  const [photoCount, setPhotoCount] = useState(1); // 写真枚数選択用
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
@@ -56,8 +59,30 @@ function Camera() {
     });
   };
 
+  const sendNotification = async (folderId, folderName, photoCount) => {
+    try {
+      const notificationsRef = ref(database, 'notifications');
+      const newNotificationRef = push(notificationsRef);
+
+      await set(newNotificationRef, {
+        type: 'new_folder',
+        folderId: folderId,
+        folderName: folderName,
+        photoCount: photoCount,
+        timestamp: Date.now(),
+        completed: false,
+        read: false
+      });
+
+      console.log('通知送信成功:', { folderName, photoCount });
+    } catch (error) {
+      console.error('通知送信エラー:', error);
+    }
+  };
+
   const handleUpload = async () => {
     if (!photoDataUrl || !accessToken) return;
+    console.log('📸 選択された写真枚数:', photoCount);
     try {
       setIsUploading(true);
       await initializeGapi();
@@ -70,6 +95,8 @@ function Camera() {
 
       const qr = await generateQRCode(subFolderId);
       await uploadImageToDrive(subFolderId, qr, accessToken, "qr");
+
+      await sendNotification(subFolderId, newFolderName, photoCount);
 
       setFolderName(newFolderName);
     } catch (err) {
@@ -103,9 +130,23 @@ function Camera() {
       </div>
 
       {photoDataUrl && !folderName && (
-        <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
-          アップロード
-        </StitchButton>
+        <>
+          <div className="mb-4 w-full max-w-md">
+            <label className="block text-sm font-bold mb-2">写真枚数を選択：</label>
+            <select
+              value={photoCount}
+              onChange={(e) => setPhotoCount(Number(e.target.value))}
+              className="border rounded px-4 py-2 w-full"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                <option key={num} value={num}>{num}枚</option>
+              ))}
+            </select>
+          </div>
+          <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
+            アップロード
+          </StitchButton>
+        </>
       )}
 
       {isUploading && (
