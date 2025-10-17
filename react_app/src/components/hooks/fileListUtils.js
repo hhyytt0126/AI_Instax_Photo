@@ -21,14 +21,26 @@ export async function handlePrintImage(fileIds) {
     // 画像読み込み完了を待つために、Blob URLの総数を取得
     const totalImages = ids.length;
 
+    // ポップアップブロックを回避するため、先にウィンドウを開く
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+        // ユーザーにポップアップブロックの解除を促す
+        alert('ポップアップがブロックされました。このサイトのポップアップを許可してください。');
+        console.error('印刷ウィンドウを開けませんでした。ポップアップがブロックされている可能性があります。');
+        return; // 処理を中断
+    }
+
+    // 先にローディングメッセージなどを表示しておく
+    printWindow.document.write('<html><head><title>画像印刷</title></head><body><p>画像を読み込み中です。しばらくお待ちください...</p></body></html>');
+
     try {
         // すべてのBlobUrlを非同期で取得
         const blobUrls = await Promise.all(
             ids.map(fileId => fetchDriveImageBlobUrl(fileId, access_token))
         );
 
-        // 印刷用ウィンドウを開く
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        // ドキュメントをクリアしてから新しい内容を書き込む
+        printWindow.document.open();
 
         // 印刷ウィンドウにコンテンツを書き込む
         printWindow.document.write(`
