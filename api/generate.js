@@ -15,6 +15,13 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+    // Log incoming request info to help debug 405 issues on Vercel
+    try {
+        console.log('api/generate invoked:', { method: req.method, url: req.url, headers: req.headers });
+    } catch (e) {
+        console.log('api/generate invoked (logging failed)');
+    }
+
     // OPTIONSリクエストに応答
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -31,7 +38,17 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { imageUrl, payload, driveFolderId, accessToken } = req.body;
+        // Ensure body is parsed (Vercel may provide string body in some setups)
+        let body = req.body;
+        if (typeof body === 'string' && body.length > 0) {
+            try {
+                body = JSON.parse(body);
+            } catch (err) {
+                console.warn('api/generate: failed to JSON.parse req.body string');
+            }
+        }
+
+        const { imageUrl, payload, driveFolderId, accessToken } = body || {};
         if (!imageUrl || !payload) {
             return res.status(400).json({ error: 'Missing required fields: imageUrl or payload' });
         }
