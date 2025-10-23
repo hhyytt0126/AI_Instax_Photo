@@ -20,6 +20,7 @@ export default function PreviewModal({ previewImageUrl, onClose }) {
           src={previewImageUrl}
           style={{ border: 0, width: '50vw', height: '50vh' }}
           allow="fullscreen"
+          title="Google Drive Preview"
         ></iframe>
         <button className="close-btn" onClick={onClose}>閉じる</button>
       </div>
