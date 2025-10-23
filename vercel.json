@@ -1,6 +1,7 @@
 {
+  "root": "react_app",
   "buildCommand": "npm run build",
-  "outputDirectory": "react_app/build",
+  "outputDirectory": "build",
   "env": {
     "NODE_ENV": "production"
   },
