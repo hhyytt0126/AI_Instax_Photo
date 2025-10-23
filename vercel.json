@@ -1,18 +1,29 @@
 {
   "builds": [
     {
-      "src": "react_app/package.json",
-      "use": "@vercel/static-build"
-    },
-    {
       "src": "api/**/*.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "react_app/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "react_app/build"
+      }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "/api/$1"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "react_app/$1"
+    },
+    {
+      "src": "^/$",
+      "dest": "react_app/index.html"
     }
   ]
 }
