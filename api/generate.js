@@ -1,4 +1,4 @@
-import { generateImage } from '../backend/generator';
+import { generateImage } from './lib/generator';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
