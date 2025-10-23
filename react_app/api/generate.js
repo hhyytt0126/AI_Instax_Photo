@@ -48,6 +48,11 @@ export default async function handler(req, res) {
         }
 
         const { imageUrl, payload, driveFolderId, accessToken } = body || {};
+        // Debug short-circuit: if caller sets _mock=true in payload, return a tiny PNG
+        if (payload && payload._mock === true) {
+            const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+            return res.json({ success: true, image: tinyPng });
+        }
         if (!imageUrl || !payload) {
             return res.status(400).json({ error: 'Missing required fields: imageUrl or payload' });
         }
