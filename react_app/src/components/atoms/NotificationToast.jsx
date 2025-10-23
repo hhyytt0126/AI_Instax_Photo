@@ -17,7 +17,7 @@ function NotificationToast({ notification, onClose }) {
             番号: <span className="font-bold">{notification.folderName}</span>
           </p>
           <p className="text-sm">
-            枚数: <span className="font-bold">{notification.photoCount}枚</span>
+            人数: <span className="font-bold">{notification.photoCount}人</span>
           </p>
         </div>
         <button

@@ -64,22 +64,26 @@ function NotificationLog({ notifications, isOpen, onClose }) {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`border rounded-lg p-4 ${
-                    notification.completed ? 'bg-gray-100' : 'bg-white'
-                  }`}
+                  className={`border rounded-lg p-4 ${notification.completed ? 'bg-gray-100' : 'bg-white'
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     {/* 通知内容 */}
                     <div className={notification.completed ? 'opacity-50' : ''}>
                       <p
-                        className={`text-lg font-bold ${
-                          notification.completed ? 'line-through' : ''
-                        }`}
+                        className={`text-lg font-bold ${notification.completed ? 'line-through' : ''
+                          }`}
                       >
                         番号: {notification.folderName}
                       </p>
                       <p className="text-sm text-gray-600">
-                        枚数: {notification.photoCount}枚
+                        人数: {notification.photoCount}人
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        印刷枚数: {Math.ceil(notification.photoCount / 2)}枚
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        値段: {notification.photoCount * 100}円
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(notification.timestamp).toLocaleString('ja-JP')}
@@ -90,11 +94,10 @@ function NotificationLog({ notifications, isOpen, onClose }) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleComplete(notification.id, notification.completed)}
-                        className={`px-3 py-1 rounded text-sm font-bold ${
-                          notification.completed
-                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                            : 'bg-green-500 hover:bg-green-600 text-white'
-                        }`}
+                        className={`px-3 py-1 rounded text-sm font-bold ${notification.completed
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                          }`}
                       >
                         {notification.completed ? '未完了' : '完了'}
                       </button>
