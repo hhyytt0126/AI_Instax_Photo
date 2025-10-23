@@ -1,0 +1,9 @@
+{
+  "name": "ai-instax-photo-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.12.2",
+    "googleapis": "^153.0.0"
+  }
+}
