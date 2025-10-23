@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd react_app && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "react_app/build",
   "env": {
     "NODE_ENV": "production"
@@ -11,7 +11,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "react_app/build/index.html"
+      "dest": "/index.html"
     }
   ]
 }
