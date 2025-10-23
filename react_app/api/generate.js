@@ -1,4 +1,3 @@
-import { generateImage } from './lib/generator';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
@@ -55,7 +54,29 @@ export default async function handler(req, res) {
 
         console.log('react_app/api/generate request:', { imageUrl, driveFolderId });
 
-        const imageBuffer = await generateImage(imageUrl, payload);
+        // Dynamically import the generator so module resolution errors can be caught
+        let generateImage;
+        try {
+            const mod = await import('./lib/generator.js');
+            generateImage = mod.generateImage || mod.default?.generateImage;
+            if (!generateImage) throw new Error('generateImage not exported from generator module');
+        } catch (impErr) {
+            console.error('Failed to import generator module:', impErr);
+            return res.status(500).json({ error: 'ImportError', message: impErr.message });
+        }
+
+        let imageBuffer;
+        try {
+            imageBuffer = await generateImage(imageUrl, payload);
+        } catch (genErr) {
+            console.error('generateImage failed:', genErr);
+            const errBody = { message: genErr.message || 'generateImage failed' };
+            if (genErr.response) {
+                errBody.upstreamStatus = genErr.response.status;
+                try { errBody.upstreamData = JSON.stringify(genErr.response.data).substring(0, 500); } catch (e) { }
+            }
+            return res.status(500).json({ error: errBody });
+        }
 
         // If Drive upload info is provided, upload and return metadata
         if (driveFolderId && accessToken) {
