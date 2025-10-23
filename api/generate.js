@@ -1,4 +1,13 @@
 import { generateImage } from '../backend/generator';
+import { google } from 'googleapis';
+import { Readable } from 'stream';
+
+function bufferToStream(buffer) {
+    const readable = new Readable();
+    readable.push(buffer);
+    readable.push(null);
+    return readable;
+}
 
 export default async function handler(req, res) {
     // CORS設定
@@ -18,24 +27,60 @@ export default async function handler(req, res) {
             received_method: req.method,
             allowed_methods: ['POST', 'OPTIONS'],
             message: `Expected POST, but received ${req.method}`,
-            headers: req.headers,
-            url: req.url,
-            path: req.path,
         });
     }
 
     try {
-        const { imageUrl, payload } = req.body;
+        const { imageUrl, payload, driveFolderId, accessToken } = req.body;
         if (!imageUrl || !payload) {
             return res.status(400).json({ error: 'Missing required fields: imageUrl or payload' });
         }
 
+        console.log('api/generate request:', { imageUrl, driveFolderId });
+
         const imageBuffer = await generateImage(imageUrl, payload);
-        res.setHeader('Content-Type', 'image/png');
-        res.status(200).send(imageBuffer);
+
+        // If Drive upload info is provided, upload and return metadata
+        if (driveFolderId && accessToken) {
+            const auth = new google.auth.OAuth2();
+            auth.setCredentials({ access_token: accessToken });
+            const drive = google.drive({ version: 'v3', auth });
+
+            const timestamp = Date.now();
+            const fileName = `${timestamp}-AIphoto.jpg`;
+
+            const uploaded = await drive.files.create({
+                requestBody: {
+                    name: fileName,
+                    parents: [driveFolderId],
+                    mimeType: 'image/jpeg',
+                },
+                media: {
+                    mimeType: 'image/jpeg',
+                    body: bufferToStream(imageBuffer),
+                },
+                fields: 'id, name, mimeType, webViewLink, webContentLink, parents',
+            });
+
+            const data = uploaded.data || {};
+            return res.json({
+                success: true,
+                fileId: data.id,
+                fileName: data.name,
+                mimeType: data.mimeType,
+                webViewLink: data.webViewLink,
+                webContentLink: data.webContentLink,
+                parents: data.parents,
+            });
+        }
+
+        // If Drive info not provided, return base64 image as JSON (caller can handle)
+        const base64 = imageBuffer.toString('base64');
+        return res.json({ success: true, image: base64 });
+
     } catch (error) {
-        console.error('Error generating image:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error in /api/generate:', error);
+        return res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 }
 
