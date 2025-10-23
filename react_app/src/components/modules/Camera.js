@@ -21,7 +21,7 @@ function Camera() {
   const [tokenClient, setTokenClient] = useState(null);
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
-  const [photoCount, setPhotoCount] = useState(1); // 写真枚数選択用
+  const [photoCount, setPhotoCount] = useState(1); // 人数選択用
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
@@ -82,7 +82,7 @@ function Camera() {
 
   const handleUpload = async () => {
     if (!photoDataUrl || !accessToken) return;
-    console.log('📸 選択された写真枚数:', photoCount);
+    console.log('📸 選択された人数:', photoCount);
     try {
       setIsUploading(true);
       await initializeGapi();
@@ -132,7 +132,7 @@ function Camera() {
       {photoDataUrl && !folderName && (
         <>
           <div className="mb-4 w-full max-w-md">
-            <label className="block text-sm font-bold mb-2">写真枚数を選択：</label>
+            <label className="block text-sm font-bold mb-2">人数を選択：</label>
             <select
               value={photoCount}
               onChange={(e) => setPhotoCount(Number(e.target.value))}
