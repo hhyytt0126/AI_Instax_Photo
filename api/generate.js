@@ -1,6 +1,6 @@
-// /api/generate.js
+import { generateImage } from '../backend/generator';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // CORS設定
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -24,11 +24,18 @@ module.exports = async function handler(req, res) {
         });
     }
 
-    // テストレスポンス
-    return res.status(200).json({
-        success: true,
-        message: 'API is working',
-        timestamp: new Date().toISOString(),
-    });
+    try {
+        const { imageUrl, payload } = req.body;
+        if (!imageUrl || !payload) {
+            return res.status(400).json({ error: 'Missing required fields: imageUrl or payload' });
+        }
+
+        const imageBuffer = await generateImage(imageUrl, payload);
+        res.setHeader('Content-Type', 'image/png');
+        res.status(200).send(imageBuffer);
+    } catch (error) {
+        console.error('Error generating image:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 }
 
