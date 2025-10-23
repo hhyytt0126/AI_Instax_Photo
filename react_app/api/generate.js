@@ -1,4 +1,3 @@
-import { google } from 'googleapis';
 import { Readable } from 'stream';
 
 function bufferToStream(buffer) {
@@ -85,6 +84,15 @@ export default async function handler(req, res) {
 
         // If Drive upload info is provided, upload and return metadata
         if (driveFolderId && accessToken) {
+            // Dynamically import googleapis to avoid top-level startup failures when not present
+            let google;
+            try {
+                google = (await import('googleapis')).google;
+            } catch (gErr) {
+                console.error('Failed to import googleapis for Drive upload:', gErr);
+                return res.status(500).json({ error: 'DriveImportError', message: gErr.message });
+            }
+
             const auth = new google.auth.OAuth2();
             auth.setCredentials({ access_token: accessToken });
             const drive = google.drive({ version: 'v3', auth });
