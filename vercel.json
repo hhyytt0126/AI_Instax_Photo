@@ -1,46 +1,25 @@
 {
-  {
-    "builds": [
-      "builds": [
-        {
-          {
-            "src": "react_app/package.json",
-            "src": "react_app/package.json",
-            "use": "@vercel/static-build",
-            "use": "@vercel/static-build",
-            "config": {
-              "config": {
-                "distDir": "build""distDir": "build"
-              }
-            }
-          },
-        },
-        {
-          {
-            "src": "api/*.js",
-            "src": "api/*.js",
-            "use": "@vercel/node""use": "@vercel/node"
-          }
-        }
-      ],
-    ],
-    "routes": [
-      "routes": [
-        {
-          {
-            "src": "/api/(.*)",
-            "src": "/api/(.*)",
-            "dest": "/api/$1""dest": "/api/$1"
-          },
-        },
-        {
-          {
-            "src": "/(.*)",
-            "src": "/(.*)",
-            "dest": "/index.html""dest": "/index.html"
-          }
-        }
-      ]
-    ]
-  }
+  "builds": [
+    {
+      "src": "react_app/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    },
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
