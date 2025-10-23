@@ -97,6 +97,18 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Error in /api/generate:', error);
-        return res.status(500).json({ error: error.message || 'Internal Server Error' });
+        // Return concise, non-sensitive error info to help debugging during deployment.
+        const errBody = { message: error.message || 'Internal Server Error' };
+        if (error.response) {
+            errBody.upstreamStatus = error.response.status;
+            try {
+                errBody.upstreamData = typeof error.response.data === 'string'
+                    ? error.response.data.substring(0, 500)
+                    : JSON.stringify(error.response.data).substring(0, 500);
+            } catch (e) {
+                // ignore stringify issues
+            }
+        }
+        return res.status(500).json({ error: errBody });
     }
 }
