@@ -1,5 +1,3 @@
-import { generateImage } from './lib/generator';
-import { google } from 'googleapis';
 import { Readable } from 'stream';
 
 function bufferToStream(buffer) {
@@ -49,16 +47,52 @@ export default async function handler(req, res) {
         }
 
         const { imageUrl, payload, driveFolderId, accessToken } = body || {};
+        // Debug short-circuit: if caller sets _mock=true in payload, return a tiny PNG
+        if (payload && payload._mock === true) {
+            const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+            return res.json({ success: true, image: tinyPng });
+        }
         if (!imageUrl || !payload) {
             return res.status(400).json({ error: 'Missing required fields: imageUrl or payload' });
         }
 
         console.log('react_app/api/generate request:', { imageUrl, driveFolderId });
 
-        const imageBuffer = await generateImage(imageUrl, payload);
+        // Dynamically import the generator so module resolution errors can be caught
+        let generateImage;
+        try {
+            const mod = await import('./lib/generator.js');
+            generateImage = mod.generateImage || mod.default?.generateImage;
+            if (!generateImage) throw new Error('generateImage not exported from generator module');
+        } catch (impErr) {
+            console.error('Failed to import generator module:', impErr);
+            return res.status(500).json({ error: 'ImportError', message: impErr.message });
+        }
+
+        let imageBuffer;
+        try {
+            imageBuffer = await generateImage(imageUrl, payload);
+        } catch (genErr) {
+            console.error('generateImage failed:', genErr);
+            const errBody = { message: genErr.message || 'generateImage failed' };
+            if (genErr.response) {
+                errBody.upstreamStatus = genErr.response.status;
+                try { errBody.upstreamData = JSON.stringify(genErr.response.data).substring(0, 500); } catch (e) { }
+            }
+            return res.status(500).json({ error: errBody });
+        }
 
         // If Drive upload info is provided, upload and return metadata
         if (driveFolderId && accessToken) {
+            // Dynamically import googleapis to avoid top-level startup failures when not present
+            let google;
+            try {
+                google = (await import('googleapis')).google;
+            } catch (gErr) {
+                console.error('Failed to import googleapis for Drive upload:', gErr);
+                return res.status(500).json({ error: 'DriveImportError', message: gErr.message });
+            }
+
             const auth = new google.auth.OAuth2();
             auth.setCredentials({ access_token: accessToken });
             const drive = google.drive({ version: 'v3', auth });
