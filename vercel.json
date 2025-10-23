@@ -1,20 +1,9 @@
 {
-  "builds": [
-    {
-      "src": "api/*.js",
-      "use": "@vercel/node",
-      "config": {
-        "nodeVersion": "18.x"
-      }
-    },
-    {
-      "src": "react_app/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "react_app/build"
-      }
-    }
-  ],
+  "buildCommand": "cd react_app && npm run build",
+  "outputDirectory": "react_app/build",
+  "env": {
+    "NODE_ENV": "production"
+  },
   "routes": [
     {
       "src": "/api/(.*)",
