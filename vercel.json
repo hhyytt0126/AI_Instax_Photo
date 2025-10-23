@@ -15,12 +15,11 @@
       "dest": "/api/$1"
     },
     {
-      "src": "^/$",
-      "dest": "/react_app/build/index.html"
+      "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
-      "dest": "/react_app/build/$1"
+      "src": "^/(.*)$",
+      "dest": "/index.html"
     }
   ]
 }
