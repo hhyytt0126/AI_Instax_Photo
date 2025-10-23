@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd react_app && npm run build",
   "outputDirectory": "react_app/build",
   "functions": {
     "api/**/*.js": {
