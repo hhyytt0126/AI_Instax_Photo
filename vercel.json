@@ -1,17 +1,14 @@
 {
   "builds": [
     {
-      "src": "api/**.js",
-      "use": "@vercel/node",
-      "config": {
-        "nodeVersion": "18.x"
-      }
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     },
     {
       "src": "react_app/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "react_app/build"
       }
     }
   ],
@@ -22,7 +19,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "react_app/build/index.html"
     }
   ]
 }
