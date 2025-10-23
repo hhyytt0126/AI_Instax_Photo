@@ -1,6 +1,7 @@
 {
-  "buildCommand": "cd react_app && npm run build",
-  "outputDirectory": "react_app/build",
+  "root": "react_app",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x"
