@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_URL || `${window.location.origin}/api`;
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
   const response = await fetch(`${BASE_URL}/generate`, {
