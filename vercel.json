@@ -16,11 +16,11 @@
     },
     {
       "src": "^/$",
-      "dest": "/react_app/index.html"
+      "dest": "/react_app/build/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/react_app/$1"
+      "dest": "/react_app/build/$1"
     }
   ]
 }
