@@ -15,8 +15,12 @@
       "dest": "/api/$1"
     },
     {
+      "src": "^/$",
+      "dest": "/react_app/index.html"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/react_app/build/$1"
+      "dest": "/react_app/$1"
     }
   ]
 }
