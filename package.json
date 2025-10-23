@@ -4,6 +4,6 @@
     "description": "AI Photo Inpainting with Google Drive",
     "private": true,
     "engines": {
-        "node": "18.x"
+        "node": "22.x"
     }
 }
