@@ -1,6 +1,10 @@
 {
   "builds": [
     {
+      "src": "api/**.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "react_app/package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -9,6 +13,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
