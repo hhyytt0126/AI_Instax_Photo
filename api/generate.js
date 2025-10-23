@@ -36,6 +36,23 @@ async function uploadFileToDrive(accessToken, folderId, fileName, buffer, mimeTy
 }
 
 export default async function handler(req, res) {
+    // CORSヘッダーを追加
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // OPTIONSリクエストに応答
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    // POSTメソッド以外は拒否
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method Not Allowed' });
+        return;
+    }
+
     try {
         const { imageUrl, payload, driveFolderId, accessToken } = req.body;
         const imageBuffer = await generateImage(imageUrl, payload);
