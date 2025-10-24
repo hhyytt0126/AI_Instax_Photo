@@ -4,8 +4,8 @@ const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 function buildApiUrl(endpoint) {
   const isProd = process.env.NODE_ENV === 'production';
-  const isDefaultApi = BASE_URL === '/api';
-  const needsJs = isProd && isDefaultApi && !endpoint.endsWith('.js');
+  // In production, append .js to serverless endpoints (e.g. '/api/folders/name/upload.js')
+  const needsJs = isProd && !endpoint.endsWith('.js');
   return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
 }
 
