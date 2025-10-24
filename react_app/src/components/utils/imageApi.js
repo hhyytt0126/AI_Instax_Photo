@@ -18,44 +18,45 @@ async function safeParseJson(response) {
     console.warn('Failed to parse JSON response, returning raw text', err);
     return text;
   }
+}
 
-  export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
-    const res = await fetch(buildApiUrl('/generate'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl, payload, driveFolderId, accessToken }),
-    });
+export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
+  const res = await fetch(buildApiUrl('/generate'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, payload, driveFolderId, accessToken }),
+  });
 
-    console.log('Response from generateImageFromAPI:', res);
+  console.log('Response from generateImageFromAPI:', res);
 
-    if (!res.ok) {
-      // Try to get error body if present, but don't assume it's JSON
-      const parsed = await safeParseJson(res);
-      const err = new Error(`Request failed with status ${res.status}`);
-      err.status = res.status;
-      err.body = parsed;
-      throw err;
-    }
-
-    // Some endpoints may return binary (image) or JSON. Try to parse JSON safely.
+  if (!res.ok) {
+    // Try to get error body if present, but don't assume it's JSON
     const parsed = await safeParseJson(res);
-    return parsed;
+    const err = new Error(`Request failed with status ${res.status}`);
+    err.status = res.status;
+    err.body = parsed;
+    throw err;
   }
 
-  export async function uploadImage({ imageUrl, driveFolderId, accessToken }) {
-    const res = await fetch(buildApiUrl('/upload'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl, driveFolderId, accessToken }),
-    });
+  // Some endpoints may return binary (image) or JSON. Try to parse JSON safely.
+  const parsed = await safeParseJson(res);
+  return parsed;
+}
 
-    if (!res.ok) {
-      const parsed = await safeParseJson(res);
-      const err = new Error(`Upload failed with status ${res.status}`);
-      err.status = res.status;
-      err.body = parsed;
-      throw err;
-    }
+export async function uploadImage({ imageUrl, driveFolderId, accessToken }) {
+  const res = await fetch(buildApiUrl('/upload'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, driveFolderId, accessToken }),
+  });
 
-    return safeParseJson(res);
+  if (!res.ok) {
+    const parsed = await safeParseJson(res);
+    const err = new Error(`Upload failed with status ${res.status}`);
+    err.status = res.status;
+    err.body = parsed;
+    throw err;
   }
+
+  return safeParseJson(res);
+}
