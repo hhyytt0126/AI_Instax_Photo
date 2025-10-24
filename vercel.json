@@ -1,4 +1,4 @@
-{
+﻿{
   "builds": [
     {
       "src": "api/**/*.js",
@@ -7,9 +7,7 @@
     {
       "src": "react_app/package.json",
       "use": "@vercel/static-build",
-      "config": {
-        "distDir": "react_app/build"
-      }
+      "config": { "distDir": "build" }
     }
   ],
   "routes": [
