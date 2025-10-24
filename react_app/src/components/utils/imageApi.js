@@ -2,6 +2,13 @@
 // If REACT_APP_API_URL is set it will be used (useful for local backend during development).
 const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
+function buildApiUrl(endpoint) {
+  // endpoint should start with '/' e.g. '/generate' or '/folders/name/upload'
+  const isProd = process.env.NODE_ENV === 'production';
+  const needsJs = isProd && !endpoint.endsWith('.js');
+  return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
+}
+
 async function safeParseJson(response) {
   const text = await response.text();
   if (!text) return null;
@@ -14,7 +21,7 @@ async function safeParseJson(response) {
 }
 
 export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
-  const res = await fetch(`${BASE_URL}/generate`, {
+  const res = await fetch(buildApiUrl('/generate'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, payload, driveFolderId, accessToken }),
@@ -37,7 +44,7 @@ export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, a
 }
 
 export async function uploadImage({ imageUrl, driveFolderId, accessToken }) {
-  const res = await fetch(`${BASE_URL}/upload`, {
+  const res = await fetch(buildApiUrl('/upload'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, driveFolderId, accessToken }),
