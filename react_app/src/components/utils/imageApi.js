@@ -1,5 +1,10 @@
 // When deployed on Vercel the serverless route is under /api.
 // If REACT_APP_API_URL is set it will be used (useful for local backend during development).
+const BASE_URL = 'http://localhost:5000';
+
+function buildApiUrl(endpoint) {
+  return `${BASE_URL}${endpoint}`;
+}
 
 async function safeParseJson(response) {
   const text = await response.text();
@@ -13,7 +18,7 @@ async function safeParseJson(response) {
 }
 
 export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
-  const res = await fetch(`/generate`, {
+  const res = await fetch(buildApiUrl('/generate'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, payload, driveFolderId, accessToken }),
@@ -36,7 +41,7 @@ export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, a
 }
 
 export async function uploadImage({ imageUrl, driveFolderId, accessToken }) {
-  const res = await fetch('/upload', {
+  const res = await fetch(buildApiUrl('/upload'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, driveFolderId, accessToken }),
