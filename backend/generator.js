@@ -1,6 +1,5 @@
 import sharp from 'sharp';
 import { createRequire } from 'module';
-const require = createRequire ? createRequire(import.meta.url) : global.require;
 
 const url = process.env.SD_WEBUI_URL || "http://host.docker.internal:7860";
 
