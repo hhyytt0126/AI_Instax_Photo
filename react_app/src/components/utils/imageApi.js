@@ -1,15 +1,5 @@
 // When deployed on Vercel the serverless route is under /api.
 // If REACT_APP_API_URL is set it will be used (useful for local backend during development).
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
-
-function buildApiUrl(endpoint) {
-  // endpoint should start with '/' e.g. '/generate' or '/folders/name/upload'
-  const isProd = process.env.NODE_ENV === 'production';
-  // In production, append .js to serverless endpoints (e.g. '/api/generate.js')
-  // so that Vercel's routing resolves the function entrypoint.
-  const needsJs = isProd && !endpoint.endsWith('.js');
-  return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
-}
 
 async function safeParseJson(response) {
   const text = await response.text();
@@ -23,7 +13,7 @@ async function safeParseJson(response) {
 }
 
 export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, accessToken }) {
-  const res = await fetch(buildApiUrl('/generate'), {
+  const res = await fetch(`/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, payload, driveFolderId, accessToken }),
