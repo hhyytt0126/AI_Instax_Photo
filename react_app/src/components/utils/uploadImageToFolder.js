@@ -1,7 +1,15 @@
 // src/components/utils/uploadImageToFolder.js
 
+const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+
+function buildApiUrl(endpoint) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const needsJs = isProd && !endpoint.endsWith('.js');
+  return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
+}
+
 export default async function uploadImageToFolder(folderName, dataUrl) {
-  const response = await fetch(`/api/folders/${folderName}/upload`, {
+  const response = await fetch(buildApiUrl(`/folders/${folderName}/upload`), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
