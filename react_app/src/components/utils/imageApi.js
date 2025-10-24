@@ -3,9 +3,7 @@
 const BASE_URL = 'http://localhost:5000';
 
 function buildApiUrl(endpoint) {
-  const isProd = process.env.NODE_ENV === 'production';
-  const needsJs = isProd && !endpoint.endsWith('.js');
-  return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
+  return `${BASE_URL}${endpoint}`;
 }
 
 async function safeParseJson(response) {
