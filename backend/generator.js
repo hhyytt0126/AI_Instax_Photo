@@ -1,10 +1,26 @@
-import axios from 'axios';
 import sharp from 'sharp';
+import { createRequire } from 'module';
+const require = createRequire ? createRequire(import.meta.url) : global.require;
 
 const url = process.env.SD_WEBUI_URL || "http://host.docker.internal:7860";
 
 async function generateImage(imageUrl, payload) {
   try {
+    // Load axios dynamically to support both dev (ESM) and Vercel production (CJS/node build)
+    let axios;
+    try {
+      // Try to load the CJS node build first (works in Vercel production)
+      axios = require('axios/dist/node/axios.cjs');
+    } catch (e1) {
+      try {
+        // Fallback to normal require (works in many CJS environments)
+        axios = require('axios');
+      } catch (e2) {
+        // As a final fallback, use dynamic ESM import (works in dev ESM)
+        const mod = await import('axios');
+        axios = mod.default || mod;
+      }
+    }
     // ① 画像取得
     const resp = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     console.log('content-type:', resp.headers['content-type'], 'size:', resp.data.byteLength);
