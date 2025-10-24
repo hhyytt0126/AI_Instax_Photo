@@ -36,7 +36,7 @@ export async function generateImageFromAPI({ imageUrl, payload, driveFolderId, a
 }
 
 export async function uploadImage({ imageUrl, driveFolderId, accessToken }) {
-  const res = await fetch(buildApiUrl('/upload'), {
+  const res = await fetch('/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageUrl, driveFolderId, accessToken }),
