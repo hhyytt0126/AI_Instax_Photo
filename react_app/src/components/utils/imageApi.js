@@ -5,9 +5,9 @@ const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 function buildApiUrl(endpoint) {
   // endpoint should start with '/' e.g. '/generate' or '/folders/name/upload'
   const isProd = process.env.NODE_ENV === 'production';
-  // Only append .js for Vercel serverless routes when using the default internal '/api' base.
-  const isDefaultApi = BASE_URL === '/api';
-  const needsJs = isProd && isDefaultApi && !endpoint.endsWith('.js');
+  // In production, append .js to serverless endpoints (e.g. '/api/generate.js')
+  // so that Vercel's routing resolves the function entrypoint.
+  const needsJs = isProd && !endpoint.endsWith('.js');
   return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
 }
 
