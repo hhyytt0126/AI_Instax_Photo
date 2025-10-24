@@ -1,6 +1,15 @@
 import { generateImage } from './lib/generator';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+try {
+    console.log('axios resolve ->', require.resolve('axios'));
+} catch (e) {
+    console.log('axios resolve failed:', e && e.message);
+}
+console.log('process.cwd ->', process.cwd());
+console.log('SD_WEBUI_URL ->', process.env.SD_WEBUI_URL || '(not set)');
 
 function bufferToStream(buffer) {
     const readable = new Readable();
