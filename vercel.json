@@ -6,9 +6,22 @@
       "config": {
         "distDir": "build"
       }
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "node_modules/**"
+    }
+  },
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
     {
       "src": "^/(.*)$",
       "dest": "react_app/$1"
