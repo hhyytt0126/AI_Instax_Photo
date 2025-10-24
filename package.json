@@ -2,6 +2,7 @@
     "name": "ai-instax-photo",
     "version": "1.0.0",
     "description": "AI Photo Inpainting with Google Drive",
+    "type": "module",
     "private": true,
     "engines": {
         "node": "22.x"
