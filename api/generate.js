@@ -1,10 +1,18 @@
 import { generateImage } from './lib/generator';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+let _require;
 try {
-    console.log('axios resolve ->', require.resolve('axios'));
+    // Use CommonJS createRequire (works when Vercel compiles ESM -> CJS)
+    const { createRequire } = require('module');
+    _require = createRequire(typeof __filename !== 'undefined' ? __filename : process.cwd());
+} catch (e) {
+    // Fallback: provide a minimal resolver that will throw when used
+    _require = { resolve: () => { throw new Error('module resolve not available in this runtime'); } };
+}
+
+try {
+    console.log('axios resolve ->', _require.resolve('axios'));
 } catch (e) {
     console.log('axios resolve failed:', e && e.message);
 }
