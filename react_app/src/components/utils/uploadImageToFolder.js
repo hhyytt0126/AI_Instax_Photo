@@ -4,7 +4,8 @@ const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 function buildApiUrl(endpoint) {
   const isProd = process.env.NODE_ENV === 'production';
-  const needsJs = isProd && !endpoint.endsWith('.js');
+  const isDefaultApi = BASE_URL === '/api';
+  const needsJs = isProd && isDefaultApi && !endpoint.endsWith('.js');
   return `${BASE_URL}${endpoint}${needsJs ? '.js' : ''}`;
 }
 
