@@ -1,6 +1,6 @@
 // When deployed on Vercel the serverless route is under /api.
 // If REACT_APP_API_URL is set it will be used (useful for local backend during development).
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = 'http://localhost:5000/api';
 
 function buildApiUrl(endpoint) {
   return `${BASE_URL}${endpoint}`;
