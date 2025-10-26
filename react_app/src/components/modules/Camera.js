@@ -25,6 +25,10 @@ function Camera() {
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
   const [photoCount, setPhotoCount] = useState(1); // 人数選択用
+  const [countdown, setCountdown] = useState(null); // PC撮影時のカウントダウン用
+  const [showFlash, setShowFlash] = useState(false); // PC撮影時のフラッシュ用
+  const [showLargePreview, setShowLargePreview] = useState(false); // PC撮影後のプレビュー表示用
+  const [showCountdownEffect, setShowCountdownEffect] = useState(false); // カウントダウン中のエフェクト用
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
@@ -43,6 +47,20 @@ function Camera() {
     }
   }, []);
 
+  // カウントダウンに合わせて白いエフェクトを制御する
+  useEffect(() => {
+    // カウントダウンが開始され、0より大きい場合
+    if (countdown !== null && countdown > 0) {
+      setShowCountdownEffect(true); // エフェクトを表示
+
+      // 150ミリ秒後にエフェクトを非表示にする
+      const timer = setTimeout(() => {
+        setShowCountdownEffect(false);
+      }, 150);
+
+      return () => clearTimeout(timer); // クリーンアップ
+    }
+  }, [countdown]);
   const handleLogin = () => {
     if (tokenClientRef.current) {
       tokenClientRef.current.requestAccessToken();
@@ -51,57 +69,29 @@ function Camera() {
 
   const startCamera = async () => {
     setShowCameraModal(true);
-    const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // 既存のストリームがあれば停止
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
 
-    if (isPC) {
-      // PC用の高解像度設定
-      const pcConstraints = {
-        video: {
-          width: { ideal: 1440 },
-          height: { ideal: 1080 },
-          facingMode: 'user'
-        },
-        audio: false
-      };
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(pcConstraints);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("PCカメラの起動に失敗しました:", err);
-        alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
-        setShowCameraModal(false);
+    // facingModeを 'user' (インカメラ) に固定
+    const constraints = {
+      video: {
+        width: { ideal: 1440 },
+        height: { ideal: 1080 },
+        facingMode: 'user'
+      },
+      audio: false
+    };
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    } else {
-      // モバイル用のシンプルな設定
-      const mobileConstraints = {
-        video: { facingMode: { ideal: "environment" } }, // まずはアウトカメラを試す
-        audio: false
-      };
-      try {
-        let stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (fallbackErr) {
-        console.warn("アウトカメラでの起動に失敗。インカメラを試します:", fallbackErr);
-        // アウトカメラが失敗した場合、インカメラで再試行
-        const frontCameraConstraints = {
-          video: { facingMode: "user" },
-          audio: false
-        };
-        try {
-          let stream = await navigator.mediaDevices.getUserMedia(frontCameraConstraints);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } catch (finalErr) {
-          console.error("カメラの起動に失敗しました:", finalErr);
-          alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
-          setShowCameraModal(false);
-        }
-      }
+    } catch (err) {
+      console.error("カメラの起動に失敗:", err);
+      alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
+      setShowCameraModal(false);
     }
   };
 
@@ -110,6 +100,8 @@ function Camera() {
       videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
+    setCountdown(null); // カウントダウンをリセット
+    setShowFlash(false); // フラッシュを非表示に
     setShowCameraModal(false);
   };
 
@@ -120,13 +112,45 @@ function Camera() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
+
       context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       setImagePreviewUrl(dataUrl);
       setPhotoDataUrl(dataUrl);
       setFolderName(null);
-      stopCamera();
+      // PCの場合、大きなプレビューを表示する
+      const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isPC) {
+        setShowLargePreview(true);
+        setShowFlash(false); // フラッシュを非表示にする
+      } else stopCamera();
     }
+  };
+
+  const handleStartCountdown = () => {
+    if (countdown !== null) return; // カウントダウン中は実行しない
+
+    let count = 5;
+    setCountdown(count);
+
+    const intervalId = setInterval(() => {
+      count -= 1;
+      setCountdown(count);
+      if (count === 0) {
+        clearInterval(intervalId);
+        // フラッシュを焚いてから撮影
+        setShowFlash(true);
+        // DOMの更新を待ってから撮影するために少し遅延させる
+        setTimeout(() => {
+          capturePhoto();
+        }, 100);
+      }
+    }, 1000);
+  };
+
+  const handleUsePhoto = () => {
+    setShowLargePreview(false);
+    stopCamera();
   };
 
   const handleTakePhoto = () => {
@@ -185,7 +209,9 @@ function Camera() {
       const qr = await generateQRCode(subFolderId);
       await uploadImageToDrive(subFolderId, qr, accessToken, "qr");
 
-      await sendNotification(subFolderId, newFolderName, photoCount);
+      if (newFolderName) {
+        await sendNotification(subFolderId, newFolderName, photoCount);
+      }
 
       setFolderName(newFolderName);
     } catch (err) {
@@ -213,7 +239,7 @@ function Camera() {
               <img
                 src={imagePreviewUrl}
                 alt="preview"
-                className="max-w-[300px] w-full h-auto"
+                className="max-w-full max-h-full object-contain"
               />
             )}
           </div>
@@ -264,20 +290,68 @@ function Camera() {
         )}
       </div>
       {showCameraModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50">
-          <video ref={videoRef} autoPlay playsInline className="w-full max-w-2xl h-auto rounded-lg"></video>
+        <div className="fixed inset-0 bg-black z-50">
+          {showLargePreview ? (
+            <>
+              <img src={imagePreviewUrl} alt="Captured" className="w-full h-full object-contain" />
+              <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-8">
+                <StitchButton onClick={handleUsePhoto}>OK</StitchButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain transform -scale-x-100"></video>
+
+              {/* カメラ注目用のインジケーター */}
+              {countdown !== null && countdown > 0 && (
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center flex-col pointer-events-none">
+                  <div className="text-red-500 text-8xl animate-pulse">▲</div>
+                </div>
+              )}
+
+              {/* カウントダウン中の白い靄エフェクト */}
+              {showCountdownEffect && (
+                <div className="absolute inset-0 bg-white opacity-30">
+                </div>
+              )}
+
+              {/* フラッシュ用のオーバーレイ */}
+              {showFlash && (
+                <div className="absolute inset-0 bg-white z-10"></div>
+              )}
+
+              {/* カウントダウン表示 */}
+              {countdown !== null && countdown > 0 && (
+                <div className="absolute inset-0 flex items-center justify-between px-16 pointer-events-none">
+                  <span className="text-white text-[60vh] font-bold leading-none" style={{ textShadow: '0 0 50px rgba(0,0,0,0.8)' }}>
+                    {countdown}
+                  </span>
+                  <span className="text-white text-[60vh] font-bold leading-none" style={{ textShadow: '0 0 50px rgba(0,0,0,0.8)' }}>
+                    {countdown}
+                  </span>
+                </div>
+              )}
+
+              {/* 操作ボタン */}
+              <div className="absolute bottom-10 left-0 right-0 flex justify-start items-center gap-8 pl-10">
+                <StitchButton onClick={handleStartCountdown} disabled={countdown !== null}>
+                  撮影
+                </StitchButton>
+                <button
+                  onClick={stopCamera}
+                  disabled={countdown !== null}
+                  className="px-6 py-3 rounded-lg bg-gray-600 bg-opacity-80 text-white font-bold text-lg disabled:opacity-50"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </>
+          )}
           <canvas ref={canvasRef} className="hidden"></canvas>
-          <div className="flex gap-4 mt-4">
-            <StitchButton onClick={capturePhoto}>
-              撮影
-            </StitchButton>
-            <button
-              onClick={stopCamera}
-              className="px-4 py-2 rounded-lg bg-gray-600 text-white font-bold"
-            >
-              キャンセル
-            </button>
-          </div>
         </div>
       )}
     </>
