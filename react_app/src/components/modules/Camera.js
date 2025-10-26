@@ -21,14 +21,14 @@ function Camera() {
   const [accessToken, setAccessToken] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [folderName, setFolderName] = useState(null);
-  const [tokenClient, setTokenClient] = useState(null);
+  const tokenClientRef = useRef(null); // useStateからuseRefに変更
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
   const [photoCount, setPhotoCount] = useState(1); // 人数選択用
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
-    if (window.google && !tokenClient) {
+    if (window.google && !tokenClientRef.current) { // .currentでアクセス
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: "https://www.googleapis.com/auth/drive.file",
@@ -39,13 +39,13 @@ function Camera() {
           }
         },
       });
-      setTokenClient(client);
+      tokenClientRef.current = client; // refに格納
     }
-  }, [tokenClient]);
+  }, []);
 
   const handleLogin = () => {
-    if (tokenClient) {
-      tokenClient.requestAccessToken();
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken();
     }
   };
 
