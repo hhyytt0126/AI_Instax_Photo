@@ -17,6 +17,7 @@ const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
 function Camera() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
@@ -29,6 +30,10 @@ function Camera() {
   const [showFlash, setShowFlash] = useState(false); // PC撮影時のフラッシュ用
   const [showLargePreview, setShowLargePreview] = useState(false); // PC撮影後のプレビュー表示用
   const [showCountdownEffect, setShowCountdownEffect] = useState(false); // カウントダウン中のエフェクト用
+  const shutterSoundRef = useRef(null); // シャッター音用のref
+  const countSoundRef = useRef(null); // カウントダウン音用のref
+  const countdown54321SoundRef = useRef(null); // 54321カウントダウン音用のref
+  const [aspectRatio, setAspectRatio] = useState('4:3'); // アスペクト比の状態
 
   useEffect(() => {
     // Google Identity Services クライアントを初期化
@@ -45,13 +50,28 @@ function Camera() {
       });
       tokenClientRef.current = client; // refに格納
     }
+    // シャッター音をプリロード
+    shutterSoundRef.current = new Audio('/shutter.mp3');
+    shutterSoundRef.current.load(); // 念のためプリロードを明示
+    // カウントダウン音をプリロード
+    countSoundRef.current = new Audio('/count.mp3');
+    countSoundRef.current.load();
+    // 54321カウントダウン音をプリロード
+    countdown54321SoundRef.current = new Audio('/54321.mp3');
+    countdown54321SoundRef.current.load();
   }, []);
 
-  // カウントダウンに合わせて白いエフェクトを制御する
+  // カウントダウンに合わせて白いエフェクトと音を制御する
   useEffect(() => {
     // カウントダウンが開始され、0より大きい場合
     if (countdown !== null && countdown > 0) {
       setShowCountdownEffect(true); // エフェクトを表示
+
+      // カウント音を再生
+      if (countSoundRef.current) {
+        countSoundRef.current.currentTime = 0;
+        countSoundRef.current.play().catch(e => console.error("カウントダウン音の再生に失敗:", e));
+      }
 
       // 150ミリ秒後にエフェクトを非表示にする
       const timer = setTimeout(() => {
@@ -61,6 +81,16 @@ function Camera() {
       return () => clearTimeout(timer); // クリーンアップ
     }
   }, [countdown]);
+
+  // アスペクト比の変更を監視してカメラを再起動
+  useEffect(() => {
+      // カメラモーダルが表示されている場合のみ再起動する
+      if (showCameraModal) {
+          startCamera();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aspectRatio]);
+
   const handleLogin = () => {
     if (tokenClientRef.current) {
       tokenClientRef.current.requestAccessToken();
@@ -70,24 +100,25 @@ function Camera() {
   const startCamera = async () => {
     setShowCameraModal(true);
     // 既存のストリームがあれば停止
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
     }
+
+    const videoConstraints = aspectRatio === '4:3'
+      ? { width: { ideal: 1440 }, height: { ideal: 1080 } }
+      : { width: { ideal: 810 }, height: { ideal: 1080 } };
 
     // facingModeを 'user' (インカメラ) に固定
     const constraints = {
       video: {
-        width: { ideal: 1440 },
-        height: { ideal: 1080 },
+        ...videoConstraints,
         facingMode: 'user'
       },
       audio: false
     };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(newStream);
     } catch (err) {
       console.error("カメラの起動に失敗:", err);
       alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
@@ -95,10 +126,15 @@ function Camera() {
     }
   };
 
+  // アスペクト比を切り替えてカメラを再起動
+  const handleToggleAspectRatio = () => {
+    setAspectRatio(prev => (prev === '4:3' ? '3:4' : '4:3'));
+  }
+
   const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
     setCountdown(null); // カウントダウンをリセット
     setShowFlash(false); // フラッシュを非表示に
@@ -112,6 +148,12 @@ function Camera() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
+
+      // シャッター音を再生
+      if (shutterSoundRef.current) {
+        shutterSoundRef.current.currentTime = 0; // 再生位置を最初に戻す
+        shutterSoundRef.current.play().catch(e => console.error("シャッター音の再生に失敗:", e));
+      }
 
       context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
@@ -132,6 +174,12 @@ function Camera() {
 
     let count = 5;
     setCountdown(count);
+
+    // 5のタイミングで一度だけ音を鳴らす
+    if (countdown54321SoundRef.current) {
+      countdown54321SoundRef.current.currentTime = 0;
+      countdown54321SoundRef.current.play().catch(e => console.error("54321カウントダウン音の再生に失敗:", e));
+    }
 
     const intervalId = setInterval(() => {
       count -= 1;
@@ -301,7 +349,12 @@ function Camera() {
           ) : (
             <>
               <video
-                ref={videoRef}
+                ref={el => {
+                  videoRef.current = el; // videoRefは引き続き保持
+                  if (el && stream) {
+                    el.srcObject = stream;
+                  }
+                }}
                 autoPlay
                 playsInline
                 className="w-full h-full object-contain transform -scale-x-100"></video>
@@ -347,6 +400,13 @@ function Camera() {
                   className="px-6 py-3 rounded-lg bg-gray-600 bg-opacity-80 text-white font-bold text-lg disabled:opacity-50"
                 >
                   キャンセル
+                </button>
+                <button
+                  onClick={handleToggleAspectRatio}
+                  disabled={countdown !== null}
+                  className="px-6 py-3 rounded-lg bg-blue-600 bg-opacity-80 text-white font-bold text-lg disabled:opacity-50"
+                >
+                  {aspectRatio === '4:3' ? '縦長に変更' : '横長に変更'}
                 </button>
               </div>
             </>
