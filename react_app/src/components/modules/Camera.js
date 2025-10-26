@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import uploadPhoto from "../utils/uploadPhoto";
 import generateQRCode from "../utils/generateQRCode";
 import {
@@ -15,6 +15,9 @@ const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const PARENT_FOLDER_ID = process.env.REACT_APP_FOLDER_ID;
 
 function Camera() {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [folderName, setFolderName] = useState(null);
@@ -46,17 +49,88 @@ function Camera() {
     }
   };
 
+  const startCamera = async () => {
+    setShowCameraModal(true);
+    // まずは高解像度(Full HD)を厳密に要求
+    const hdConstraints = {
+      video: {
+        width: { exact: 1440 }, // 4:3
+        height: { exact: 1080 }, // 縦1080pxを維持
+        facingMode: 'user'
+      },
+      audio: false
+    };
+    // もし高解像度がダメなら、理想的な解像度として要求（フォールバック）
+    const fallbackConstraints = {
+      video: {
+        width: { ideal: 1440 }, // 4:3
+        height: { ideal: 1080 }, // 縦1080pxを維持
+        facingMode: 'user'
+      },
+      audio: false
+    };
+
+    try {
+      // まず高解像度を試す
+      let stream = await navigator.mediaDevices.getUserMedia(hdConstraints);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.warn("1440x1080でのカメラ起動に失敗。フォールバックします:", err);
+      try {
+        // 高解像度が失敗した場合、フォールバックを試す
+        let stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (fallbackErr) {
+        console.error("カメラの起動に失敗しました:", fallbackErr);
+        alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
+        setShowCameraModal(false);
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setShowCameraModal(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      setImagePreviewUrl(dataUrl);
+      setPhotoDataUrl(dataUrl);
+      setFolderName(null);
+      stopCamera();
+    }
+  };
+
   const handleTakePhoto = () => {
     if (!accessToken) {
       alert("先にGoogleログインしてください。");
       return;
     }
-
-    uploadPhoto((dataUrl) => {
-      setImagePreviewUrl(dataUrl);
-      setPhotoDataUrl(dataUrl);
-      setFolderName(null); // 前回のフォルダ名リセット
-    });
+    const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isPC) {
+      startCamera();
+    } else {
+      uploadPhoto((dataUrl) => {
+        setImagePreviewUrl(dataUrl);
+        setPhotoDataUrl(dataUrl);
+        setFolderName(null); // 前回のフォルダ名リセット
+      });
+    }
   };
 
   const sendNotification = async (folderId, folderName, photoCount) => {
@@ -108,71 +182,90 @@ function Camera() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <h1 className="text-center text-xl font-bold m-8">写真をアップロードしてね！</h1>
+    <>
+      <div className="w-full flex flex-col items-center">
+        <h1 className="text-center text-xl font-bold m-8">写真をアップロードしてね！</h1>
 
-      {!accessToken ? (
-        <StitchButton onClick={handleLogin}>Googleにログイン</StitchButton>
-      ) : (
-        <StitchButton onClick={handleTakePhoto} disabled={isUploading}>写真を撮る</StitchButton>
-      )}
+        {!accessToken ? (
+          <StitchButton onClick={handleLogin}>Googleにログイン</StitchButton>
+        ) : (
+          <StitchButton onClick={handleTakePhoto} disabled={isUploading}>写真を撮る</StitchButton>
+        )}
 
-      <div className="flex justify-center w-full m-6">
-        <div className="flex justify-center items-center w-[500px] h-[500px] border-2 border-dashed border-gray-400 p-2">
-          {imagePreviewUrl && (
-            <img
-              src={imagePreviewUrl}
-              alt="preview"
-              className="max-w-[300px] w-full h-auto"
-            />
-          )}
-        </div>
-      </div>
-
-      {photoDataUrl && !folderName && (
-        <>
-          <div className="mb-4 w-full max-w-md">
-            <label className="block text-sm font-bold mb-2">人数を選択：</label>
-            <select
-              value={photoCount}
-              onChange={(e) => setPhotoCount(Number(e.target.value))}
-              className="border rounded px-4 py-2 w-full"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                <option key={num} value={num}>{num}枚</option>
-              ))}
-            </select>
+        <div className="flex justify-center w-full m-6">
+          <div className="flex justify-center items-center w-[500px] h-[500px] border-2 border-dashed border-gray-400 p-2">
+            {imagePreviewUrl && (
+              <img
+                src={imagePreviewUrl}
+                alt="preview"
+                className="max-w-[300px] w-full h-auto"
+              />
+            )}
           </div>
-          <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
-            アップロード
-          </StitchButton>
-        </>
-      )}
+        </div>
 
-      {isUploading && (
-        <div id="fullOverlay" className="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">
-          <div className="text-center mt-5">
-            <div className="spinner-container">
-              <div className="spinner-flip">
-                <div className="spinner-face spinner-front">
-                  <img src="ai-cheki.jpg" alt="Front" className="w-full h-full object-cover rounded-xl" />
+        {photoDataUrl && !folderName && (
+          <>
+            <div className="mb-4 w-full max-w-md">
+              <label className="block text-sm font-bold mb-2">人数を選択：</label>
+              <select
+                value={photoCount}
+                onChange={(e) => setPhotoCount(Number(e.target.value))}
+                className="border rounded px-4 py-2 w-full"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  <option key={num} value={num}>{num}枚</option>
+                ))}
+              </select>
+            </div>
+            <StitchButton onClick={handleUpload} disabled={isUploading} className="mt-5 p-8">
+              アップロード
+            </StitchButton>
+          </>
+        )}
+
+        {isUploading && (
+          <div id="fullOverlay" className="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">
+            <div className="text-center mt-5">
+              <div className="spinner-container">
+                <div className="spinner-flip">
+                  <div className="spinner-face spinner-front">
+                    <img src="ai-cheki.jpg" alt="Front" className="w-full h-full object-cover rounded-xl" />
+                  </div>
+                  <div className="spinner-face spinner-back">
+                    <img src="real.jpg" alt="Back" className="w-full h-full object-cover rounded-xl" />
+                  </div>
                 </div>
-                <div className="spinner-face spinner-back">
-                  <img src="real.jpg" alt="Back" className="w-full h-full object-cover rounded-xl" />
-                </div>
+                <p className="mt-2 text-white text-xl font-semibold">アップロード中...</p>
               </div>
-              <p className="mt-2 text-white text-xl font-semibold">アップロード中...</p>
             </div>
           </div>
+        )}
+
+        {folderName && (
+          <p className="flex justify-center mt-5 font-bold">
+            あなたの待ち受け番号は <span className="text-blue-600 ml-2">{folderName}</span> です
+          </p>
+        )}
+      </div>
+      {showCameraModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50">
+          <video ref={videoRef} autoPlay playsInline className="w-full max-w-2xl h-auto rounded-lg"></video>
+          <canvas ref={canvasRef} className="hidden"></canvas>
+          <div className="flex gap-4 mt-4">
+            <StitchButton onClick={capturePhoto}>
+              撮影
+            </StitchButton>
+            <button
+              onClick={stopCamera}
+              className="px-4 py-2 rounded-lg bg-gray-600 text-white font-bold"
+            >
+              キャンセル
+            </button>
+          </div>
         </div>
       )}
-
-      {folderName && (
-        <p className="flex justify-center mt-5 font-bold">
-          あなたの待ち受け番号は <span className="text-blue-600 ml-2">{folderName}</span> です
-        </p>
-      )}
-    </div>
+    </>
   );
 }
 

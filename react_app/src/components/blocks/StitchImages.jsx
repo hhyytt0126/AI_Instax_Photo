@@ -48,7 +48,7 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
     };
     logoImage.onerror = () => console.error('ロゴの読み込みに失敗しました。');
 
-    const drawImages = (logo) => {
+    const drawImages = async (logo) => {
       // 画像をwidthの降順（大きい順）にソート
       const sortedImages = [...images].sort((a, b) => b.width - a.width);
       let realImage = sortedImages[0];
@@ -62,31 +62,35 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
 
       // 横長画像を回転させる関数
       const rotateImage = (img, direction = 'clockwise') => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.height;
-        canvas.height = img.width;
-        const ctx = canvas.getContext('2d');
+        return new Promise((resolve) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.height;
+          canvas.height = img.width;
+          const ctx = canvas.getContext('2d');
 
-        const angle = direction === 'clockwise' ? 90 : -90;
+          const angle = direction === 'clockwise' ? 90 : -90;
 
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(angle * Math.PI / 180);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(angle * Math.PI / 180);
+          ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
-        const rotatedImg = new Image();
-        rotatedImg.src = canvas.toDataURL();
-        rotatedImg.width = canvas.width;
-        rotatedImg.height = canvas.height;
-        return rotatedImg;
+          const rotatedImg = new Image();
+          rotatedImg.onload = () => {
+            rotatedImg.width = canvas.width;
+            rotatedImg.height = canvas.height;
+            resolve(rotatedImg);
+          };
+          rotatedImg.src = canvas.toDataURL();
+        });
       };
 
       // チェキ風画像を生成するヘルパー関数
-      const makeChekiFormat = (img, type, textToWrite) => {
+      const makeChekiFormat = async (img, type, textToWrite) => {
         const isLandscape = img.width > img.height;
         // 横長画像の場合はtypeに応じて回転、そうでなければそのまま
-        const sourceImg = isLandscape
-          ? rotateImage(img, type === 'ai' ? 'counter-clockwise' : 'clockwise')
-          : img;
+        const sourceImg = isLandscape 
+          ? await rotateImage(img, type === 'ai' ? 'counter-clockwise' : 'clockwise') 
+          : img; 
         const iw = sourceImg.width;
         const ih = sourceImg.height;
         let outW, outH, pasteX1, pasteY, pasteX2, bandW;
@@ -206,8 +210,8 @@ export default function StitchImages({ imageUrls, parentFolderId, parentFolderNa
       };
 
       // realImageとaiImageをそれぞれ加工
-      const chekiCanvasForReal = makeChekiFormat(realImage, 'real', parentFolderName);
-      const chekiCanvasForAi = makeChekiFormat(aiImage, 'ai', parentFolderName);
+      const chekiCanvasForReal = await makeChekiFormat(realImage, 'real', parentFolderName);
+      const chekiCanvasForAi = await makeChekiFormat(aiImage, 'ai', parentFolderName);
 
       // StateにDataURLとして保存
       setGeneratedImages({
