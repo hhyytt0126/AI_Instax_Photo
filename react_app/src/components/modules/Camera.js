@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import generateQRCode from "../utils/generateQRCode";
+import uploadPhoto from "../utils/uploadPhoto";
 import {
   createDriveSubFolder,
   uploadImageToDrive,
@@ -133,8 +134,18 @@ function Camera() {
       alert("先にGoogleログインしてください。");
       return;
     }
-    // 問題切り分けのため、すべてのデバイスでモーダルカメラを起動
-    startCamera();
+    const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isPC) {
+      // PCの場合はモーダルカメラを起動
+      startCamera();
+    } else {
+      // スマホの場合はOS標準のファイル選択/カメラを起動
+      uploadPhoto((dataUrl) => {
+        setImagePreviewUrl(dataUrl);
+        setPhotoDataUrl(dataUrl);
+        setFolderName(null); // 前回のフォルダ名リセット
+      });
+    }
   };
 
   const sendNotification = async (folderId, folderName, photoCount) => {
