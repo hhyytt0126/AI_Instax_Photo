@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import uploadPhoto from "../utils/uploadPhoto";
 import generateQRCode from "../utils/generateQRCode";
 import {
   createDriveSubFolder,
@@ -51,43 +50,56 @@ function Camera() {
 
   const startCamera = async () => {
     setShowCameraModal(true);
-    // まずは高解像度(Full HD)を厳密に要求
-    const hdConstraints = {
-      video: {
-        width: { exact: 1440 }, // 4:3
-        height: { exact: 1080 }, // 縦1080pxを維持
-        facingMode: 'user'
-      },
-      audio: false
-    };
-    // もし高解像度がダメなら、理想的な解像度として要求（フォールバック）
-    const fallbackConstraints = {
-      video: {
-        width: { ideal: 1440 }, // 4:3
-        height: { ideal: 1080 }, // 縦1080pxを維持
-        facingMode: 'user'
-      },
-      audio: false
-    };
+    const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    try {
-      // まず高解像度を試す
-      let stream = await navigator.mediaDevices.getUserMedia(hdConstraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.warn("1440x1080でのカメラ起動に失敗。フォールバックします:", err);
+    if (isPC) {
+      // PC用の高解像度設定
+      const pcConstraints = {
+        video: {
+          width: { ideal: 1440 },
+          height: { ideal: 1080 },
+          facingMode: 'user'
+        },
+        audio: false
+      };
       try {
-        // 高解像度が失敗した場合、フォールバックを試す
-        let stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        const stream = await navigator.mediaDevices.getUserMedia(pcConstraints);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error("PCカメラの起動に失敗しました:", err);
+        alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
+        setShowCameraModal(false);
+      }
+    } else {
+      // モバイル用のシンプルな設定
+      const mobileConstraints = {
+        video: { facingMode: { ideal: "environment" } }, // まずはアウトカメラを試す
+        audio: false
+      };
+      try {
+        let stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       } catch (fallbackErr) {
-        console.error("カメラの起動に失敗しました:", fallbackErr);
-        alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
-        setShowCameraModal(false);
+        console.warn("アウトカメラでの起動に失敗。インカメラを試します:", fallbackErr);
+        // アウトカメラが失敗した場合、インカメラで再試行
+        const frontCameraConstraints = {
+          video: { facingMode: "user" },
+          audio: false
+        };
+        try {
+          let stream = await navigator.mediaDevices.getUserMedia(frontCameraConstraints);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (finalErr) {
+          console.error("カメラの起動に失敗しました:", finalErr);
+          alert("カメラの起動に失敗しました。ブラウザのカメラアクセス許可を確認してください。");
+          setShowCameraModal(false);
+        }
       }
     }
   };
@@ -121,16 +133,8 @@ function Camera() {
       alert("先にGoogleログインしてください。");
       return;
     }
-    const isPC = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isPC) {
-      startCamera();
-    } else {
-      uploadPhoto((dataUrl) => {
-        setImagePreviewUrl(dataUrl);
-        setPhotoDataUrl(dataUrl);
-        setFolderName(null); // 前回のフォルダ名リセット
-      });
-    }
+    // 問題切り分けのため、すべてのデバイスでモーダルカメラを起動
+    startCamera();
   };
 
   const sendNotification = async (folderId, folderName, photoCount) => {

@@ -1,4 +1,4 @@
-import React, { use, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { uploadImageToDrive } from "../utils/googleDriveUtils";
 import '../css/experiment.css'; // Assuming you have some styles for this component
 /**
@@ -196,7 +196,6 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
       setSending(false);
     }
   }
-  const imgRef = useRef(null);
   const drawCanvasRef = useRef(null); // for mask drawing (same size as image)
   const previewCanvasRef = useRef(null); // for overlay preview
   const lastPos = useRef({ x: 0, y: 0 });
@@ -279,6 +278,25 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     return () => URL.revokeObjectURL(url);
   }, [imgFile]);
 
+  const updatePreview = useCallback(() => {
+    if (!imgUrl || !previewCanvasRef.current || !drawCanvasRef.current) return;
+    const pcanvas = previewCanvasRef.current;
+    const ctx = pcanvas.getContext("2d");
+    const baseImg = new Image();
+    baseImg.crossOrigin = "anonymous";
+    baseImg.onload = () => {
+      ctx.clearRect(0, 0, pcanvas.width, pcanvas.height);
+      ctx.drawImage(baseImg, 0, 0, pcanvas.width, pcanvas.height);
+
+      const mask = drawCanvasRef.current;
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.drawImage(mask, 0, 0);
+      ctx.restore();
+    };
+    baseImg.src = imgUrl;
+  }, [imgUrl]);
+
   useEffect(() => {
     if (!imgUrl) return;
     const img = new Image();
@@ -298,8 +316,7 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
       updatePreview();
     };
     img.src = imgUrl;
-  }, [imgUrl]);
-  // (removed duplicate declaration)
+  }, [imgUrl, updatePreview]);
   function getCanvasPos(e) {
     const canvas = drawCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -420,25 +437,6 @@ export default function Experiment({ sdApiBase = "http://127.0.0.1:7860/sdapi/v1
     ctx.putImageData(imgData, 0, 0);
     updatePreview();
   }
-
-  function updatePreview() {
-    const pcanvas = previewCanvasRef.current;
-    const ctx = pcanvas.getContext("2d");
-    const baseImg = new Image();
-    baseImg.onload = () => {
-      ctx.clearRect(0, 0, pcanvas.width, pcanvas.height);
-      ctx.drawImage(baseImg, 0, 0, pcanvas.width, pcanvas.height);
-
-      // draw translucent red where mask is white
-      const mask = drawCanvasRef.current;
-      ctx.save();
-      ctx.globalAlpha = 0.45;
-      ctx.drawImage(mask, 0, 0);
-      ctx.restore();
-    };
-    baseImg.src = imgUrl;
-  }
-
   function dataUrlFromImage() {
     return new Promise((resolve) => {
       const img = new Image();
