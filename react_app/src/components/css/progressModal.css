@@ -34,13 +34,17 @@
 }
 
 .progress-image {
-  width: 100%;
-  height: auto;
-  max-height: 50vh;
-  /* reduced from 60vh */
+  /* Make images flex-safe so two can sit side-by-side */
+  height: 40vh;
   object-fit: contain;
+  object-position: center;
   border-radius: 12px;
   padding: 8px;
+  /* enforce a consistent display height so both images appear the same size */
+  display: block;
+  /* ensure image content is centered within its box */
+  margin: 0 auto;
+  /* center the image block horizontally */
 }
 
 @media (max-width: 1280px) {
