@@ -27,24 +27,25 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 800px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 80vh;
+  /* reduced to make modal shorter */
   overflow-y: auto;
-  position: relative;
+  padding: 20px;
 }
 
 .progress-image {
-  /* Responsive images: cap by viewport to avoid causing horizontal overflow */
-  width: min(640px, 70vw);
+  width: 100%;
   height: auto;
-  max-height: calc(80vh - 220px);
+  max-height: 50vh;
+  /* reduced from 60vh */
   object-fit: contain;
-  padding: 8px;
   border-radius: 12px;
+  padding: 8px;
 }
 
 @media (max-width: 1280px) {
   .progress-image {
-    width: min(480px, 70vw);
+    width: min(420px, 70vw);
   }
 }
 
@@ -54,7 +55,7 @@
   }
 
   .progress-image {
-    width: min(260px, 90vw);
+    width: min(220px, 90vw);
   }
 }
 
