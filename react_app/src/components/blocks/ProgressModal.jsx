@@ -100,14 +100,14 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={(e) => e.stopPropagation()}>
-      <div className="progress-modal-content bg-white rounded-3xl shadow-2xl p-10 w-full relative" onClick={e => e.stopPropagation()} style={{ maxWidth: '1600px', maxHeight: '94vh', overflowY: 'auto' }}>
+      <div className="progress-modal-content bg-white rounded-3xl shadow-2xl p-10 w-full relative" onClick={e => e.stopPropagation()} style={{ maxWidth: '1600px', maxHeight: '80vh', overflowY: 'auto' }}>
         <h3 className="text-3xl font-bold mb-6 text-center">生成進捗</h3>
         {error ? (
           <div className="text-red-600 text-center mb-4">{error}</div>
         ) : (
           <>
-            <div className="w-full h-10 bg-gray-200 rounded mb-4 overflow-hidden">
-              <div className="h-10 bg-blue-700 transition-all" style={{ width: `${progress * 100}%` }}></div>
+            <div className="w-full h-6 bg-gray-200 rounded mb-4 overflow-hidden">
+              <div className="h-6 bg-blue-700 transition-all" style={{ width: `${progress * 100}%` }}></div>
             </div>
             <div className="text-lg text-gray-700 text-center mb-4">{textInfo} <span className="font-semibold">({(progress * 100).toFixed(1)}%)</span></div>
             <div className="flex items-center justify-center gap-10 mb-8 flex-wrap">
@@ -120,7 +120,7 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
               <img src={currentImage} alt="生成中" className='progress-image rounded border bg-gray-100 object-contain object-center' />
             </div>
             <div className="flex justify-center mb-6">
-              <img src="painter.gif" alt="Loading" className='w-40 h-40' />
+              <img src="painter.gif" alt="Loading" className='w-28 h-28' />
             </div>
           </>
         )}
