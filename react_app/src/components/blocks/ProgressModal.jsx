@@ -110,14 +110,18 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
               <div className="h-6 bg-blue-700 transition-all" style={{ width: `${progress * 100}%` }}></div>
             </div>
             <div className="text-lg text-gray-700 text-center mb-4">{textInfo} <span className="font-semibold">({(progress * 100).toFixed(1)}%)</span></div>
-            <div className="flex items-center justify-center gap-10 mb-8 flex-wrap">
+            <div className="grid [grid-template-columns:auto_100px_auto] items-center justify-items-center mb-8">
               <img
                 src={viewLink}
                 className="progress-image rounded border bg-gray-100 object-contain object-center"
                 alt="Drive Preview"
               />
               <span className="text-6xl text-center">→</span>
-              <img src={currentImage} alt="生成中" className='progress-image rounded border bg-gray-100 object-contain object-center' />
+              <img
+                src={currentImage}
+                alt="生成中"
+                className="progress-image rounded border bg-gray-100 object-contain object-center"
+              />
             </div>
             <div className="flex justify-center mb-6">
               <img src="painter.gif" alt="Loading" className='w-28 h-28' />
