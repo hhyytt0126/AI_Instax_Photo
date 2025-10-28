@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import '../css/generateModal.css';
 import { convertToViewLink } from '../hooks/useDriveFiles';
 import ProgressModal from './ProgressModal';
+import promptsList from '../../data/prompts.json';
 
 export default function GenerateModal({ imageUrl, onClose, onGenerate, generating }) {
-  const [prompt, setPrompt] = useState("smile, anime-style, 8k, RAW photo, best quality, masterpiece, anime, clear,  best quality ,ultra high res");
-  const [negativePrompt, setNegativePrompt] = useState("EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly, error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw.");
+  const defaultPrompt = (Array.isArray(promptsList) && promptsList[0] && promptsList[0].prompt) ||
+    "smile, anime-style, 8k, RAW photo, best quality, masterpiece, anime, clear,  best quality ,ultra high res";
+  const defaultNegative = (Array.isArray(promptsList) && promptsList[0] && promptsList[0].negative) ||
+    "EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly, error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw.";
+  const [prompt, setPrompt] = useState(defaultPrompt);
+  const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
+  const [negativePrompt, setNegativePrompt] = useState(defaultNegative);
   const [steps, setSteps] = useState(20);
   const [cfgScale, setCfgScale] = useState(7);
   const [sampler, setSampler] = useState("DPM++ 2M Karras");
@@ -139,7 +145,30 @@ export default function GenerateModal({ imageUrl, onClose, onGenerate, generatin
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">プロンプト</label>
+                  <label className="form-label">プロンプト（プリセット）</label>
+                  {Array.isArray(promptsList) && promptsList.length > 0 ? (
+                    <select
+                      className="form-select"
+                      value={selectedPresetIndex}
+                      onChange={(e) => {
+                        const idx = Number(e.target.value);
+                        setSelectedPresetIndex(idx);
+                        const p = promptsList[idx];
+                        if (p && p.prompt) setPrompt(p.prompt);
+                        if (p && p.negative) setNegativePrompt(p.negative);
+                      }}
+                    >
+                      {promptsList.map((p, i) => (
+                        <option key={p.name + i} value={i}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>プリセットが存在しません</div>
+                  )}
+
+                  <label className="form-label" style={{ marginTop: '0.5rem' }}>プロンプト（編集可）</label>
                   <textarea
                     className="form-textarea"
                     value={prompt}

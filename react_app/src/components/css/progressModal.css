@@ -1,18 +1,61 @@
+.modal-overlay {
+  overflow-x: hidden;
+  /* prevent horizontal scrollbar when modal content is wide */
+}
+
 .progress-image-container {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 10px;
   height: 100vh;
-  width: 70vh;
+  width: 80vh;
 }
 
 .unified-size {
-  width: 300px;
-  height: 300px;
+  width: 640px;
+  height: 640px;
   object-fit: cover;
   padding: 10px;
   border: none;
+}
+
+/* Larger modal specific styles */
+.progress-modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.progress-image {
+  /* Responsive images: cap by viewport to avoid causing horizontal overflow */
+  width: min(640px, 70vw);
+  height: auto;
+  max-height: calc(80vh - 220px);
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+@media (max-width: 1280px) {
+  .progress-image {
+    width: min(480px, 70vw);
+  }
+}
+
+@media (max-width: 800px) {
+  .progress-modal-content {
+    padding: 18px;
+  }
+
+  .progress-image {
+    width: min(260px, 90vw);
+  }
 }
 
 .arrow {
