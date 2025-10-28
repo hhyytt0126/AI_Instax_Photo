@@ -1,0 +1,12 @@
+[
+    {
+        "name": "少人数",
+        "prompt": "smile, anime-style, 8k, RAW photo, best quality, masterpiece, anime, clear, best quality, ultra high res",
+        "negative": "EasyNegative, deformed mutated disfigured, missing arms, 4 fingers, 6 fingers,extra_arms , mutated hands, bad anatomy, disconnected limbs, low quality, worst quality, out of focus, ugly, error, blurry, bokeh, Shoulder bag, bag, multiple arms, nsfw."
+    },
+    {
+        "name": "グループ写真",
+        "prompt": "group photo, multiple people standing together, natural lighting, casual clothing, mix of men and women, smiling naturally, photo taken by camera, balanced composition, anime-style, masterpiece, 8k, RAW photo, clear, ultra high res, group smiling together, some looking at camera, others chatting, natural relaxed atmosphere, each person wearing different outfit, varied fashion, realistic clothing textures",
+        "negative": "EasyNegative, disfigured, bad anatomy, missing limbs, low quality, uniform clothing, same face, feminine male, gender ambiguity, unnatural clothing, inconsistent style, bad composition, out of focus, identical outfit, uniform, costume-like clothing"
+    }
+]
