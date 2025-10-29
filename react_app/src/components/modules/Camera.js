@@ -334,8 +334,9 @@ function Camera() {
         )}
 
         {folderName && (
-          <p className="flex justify-center mt-5 font-bold">
-            あなたの待ち受け番号は <span className="text-blue-600 ml-2">{folderName}</span> です
+          <p className="flex flex-col items-center mt-5 mb-5 font-bold text-3xl">
+            受付番号
+            <span className="text-blue-600 text-6xl mt-2">{folderName}</span>
           </p>
         )}
       </div>
