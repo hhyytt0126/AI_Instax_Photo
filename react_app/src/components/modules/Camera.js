@@ -88,7 +88,8 @@ function Camera() {
       await initializeGapi();
       window.gapi.client.setToken({ access_token: accessToken });
 
-      const newFolderName = `${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}${Math.floor(Math.random() * 90 + 10)}`;
+      const raw = `${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}${Math.floor(Math.random() * 90 + 10)}`;
+      const newFolderName = `${raw.slice(0, 4)}-${raw.slice(4)}`;
       const subFolderId = await createDriveSubFolder(PARENT_FOLDER_ID, newFolderName, accessToken);
 
       await uploadImageToDrive(subFolderId, photoDataUrl, accessToken, "Realphoto");
