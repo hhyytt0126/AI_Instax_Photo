@@ -184,7 +184,7 @@ export default function PC() {
       <LogoutViewer
         token={token}
         onLogout={logout}
-        notificationCount={notifications.length}
+        notifications={notifications} // 未完了の通知数はコンポーネント側で算出します
         onOpenNotificationLog={() => setShowNotificationLog(true)}
       />
       {!token ? (

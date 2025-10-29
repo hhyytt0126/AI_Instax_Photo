@@ -71,7 +71,8 @@ function Camera() {
         photoCount: photoCount,
         timestamp: Date.now(),
         completed: false,
-        read: false
+        read: false,
+        purchased: false
       });
 
       console.log('通知送信成功:', { folderName, photoCount });
