@@ -13,6 +13,13 @@ function NotificationLog({ notifications, isOpen, onClose }) {
 
   // 完了ボタンのハンドラー
   const handleComplete = async (notificationId, currentStatus) => {
+    // 完了から未完了に戻す場合のみ確認ダイアログを表示
+    if (currentStatus) {
+      if (!window.confirm('この通知を「未完了」に戻しますか？')) {
+        return;
+      }
+    }
+
     try {
       const notificationRef = ref(database, `notifications/${notificationId}`);
       await update(notificationRef, {

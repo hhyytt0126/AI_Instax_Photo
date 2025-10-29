@@ -31,6 +31,13 @@ export default function NotificationManager() {
 
     // Toggle purchase status (purchased)
     const handleToggle = async (id, current) => {
+        // 購入済みから未購入に戻す場合のみ確認ダイアログを表示
+        if (current) {
+            if (!window.confirm('この通知を「未購入」に戻しますか？')) {
+                return;
+            }
+        }
+
         try {
             const r = ref(database, `notifications/${id}`);
             await update(r, { purchased: !current });
