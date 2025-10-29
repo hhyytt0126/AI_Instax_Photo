@@ -199,8 +199,8 @@ export default function PC() {
       <LogoutViewer
         token={token}
         onLogout={logout}
-        notificationCount={notifications.filter(n => !n.purchased).length}
         onOpenNotificationLog={() => setShowNotificationLog(true)}
+        notifications={notifications} // notifications配列を渡す
       />
       {!token ? (
         <LoginCard onLogin={requestAccessToken} />
