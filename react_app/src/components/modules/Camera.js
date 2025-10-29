@@ -305,7 +305,7 @@ function Camera() {
                 className="border rounded px-4 py-2 w-full"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                  <option key={num} value={num}>{num}枚</option>
+                  <option key={num} value={num}>{num}人</option>
                 ))}
               </select>
             </div>
