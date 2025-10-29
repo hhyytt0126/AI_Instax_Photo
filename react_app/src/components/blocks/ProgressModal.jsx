@@ -10,6 +10,19 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
   const [currentImage, setCurrentImage] = useState(null); // 🔹 追加
   const [error, setError] = useState(null);
   const [viewLink, setViewLink] = useState('');
+  const [waitImage, setWaitImage] = useState("wait_image.png");
+  const handleViewLoad = (e) => {
+    const img = e.target;
+    const { naturalWidth, naturalHeight } = img;
+
+    // 横長なら wide_wait_image, 縦長なら wait_image
+    if (naturalWidth > naturalHeight) {
+      setWaitImage("wide_wait_image.png");
+    } else {
+      setWaitImage("wait_image.png");
+    }
+  };
+
   useEffect(() => {
     getDriveFileId(imageUrl).then(fileId => {
       if (fileId) {
@@ -113,12 +126,15 @@ export default function ProgressModal({ imageUrl, visible, onClose, sdApiUrl = '
             <div className="grid [grid-template-columns:auto_100px_auto] items-center justify-items-center mb-8">
               <img
                 src={viewLink}
+                onLoad={handleViewLoad}
                 className="progress-image rounded border bg-gray-100 object-contain object-center"
                 alt="Drive Preview"
               />
-              <span className="text-6xl text-center">→</span>
+
+              <img src="arrow.gif" alt="Loading" className="w-36 h-36" />
+
               <img
-                src={currentImage}
+                src={currentImage ? currentImage : waitImage}
                 alt="生成中"
                 className="progress-image rounded border bg-gray-100 object-contain object-center"
               />
