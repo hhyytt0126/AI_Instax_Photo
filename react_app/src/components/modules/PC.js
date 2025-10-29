@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { useDriveFiles } from '../hooks/useDriveFiles';
 import { generateImageFromAPI, uploadImage } from '../utils/imageApi';
@@ -41,6 +41,8 @@ export default function PC() {
   const [notifications, setNotifications] = useState([]);
   const [showNotificationLog, setShowNotificationLog] = useState(false);
   const [newNotification, setNewNotification] = useState(null);
+  const notificationSoundRef = useRef(null);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(false);
 
   useEffect(() => {
     const initClient = async () => {
@@ -51,6 +53,9 @@ export default function PC() {
       });
     };
     initClient();
+    // 通知音をプリロード
+    notificationSoundRef.current = new Audio('/チェキチェキ.wav');
+    notificationSoundRef.current.load();
   }, []);
 
   useEffect(() => {
@@ -89,6 +94,16 @@ export default function PC() {
 
       // 監視開始後の通知のみ処理（初回ロード時の古い通知を除外）
       if (notification.timestamp > startTime - 5000) {
+        if (notificationSoundRef.current && !isSoundPlaying) {
+          notificationSoundRef.current.currentTime = 0;
+          notificationSoundRef.current.play().catch(e => console.error("通知音の再生に失敗:", e));
+          setIsSoundPlaying(true);
+          setTimeout(() => {
+            setIsSoundPlaying(false);
+          }, 1000); // 1秒間のクールダウン
+        }
+
+
         console.log('🔔 新着通知を受信:', notification);
         setNewNotification({
           id: notificationId,
@@ -184,7 +199,7 @@ export default function PC() {
       <LogoutViewer
         token={token}
         onLogout={logout}
-        notifications={notifications} // 未完了の通知数はコンポーネント側で算出します
+        notificationCount={notifications.filter(n => !n.purchased).length}
         onOpenNotificationLog={() => setShowNotificationLog(true)}
       />
       {!token ? (
