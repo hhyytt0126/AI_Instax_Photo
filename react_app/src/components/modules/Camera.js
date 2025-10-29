@@ -25,7 +25,7 @@ function Camera() {
   const tokenClientRef = useRef(null); // useStateからuseRefに変更
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
-  const [photoCount, setPhotoCount] = useState(1); // 人数選択用
+  const [photoCount, setPhotoCount] = useState(''); // 人数選択用
   const [countdown, setCountdown] = useState(null); // PC撮影時のカウントダウン用
   const [showFlash, setShowFlash] = useState(false); // PC撮影時のフラッシュ用
   const [showLargePreview, setShowLargePreview] = useState(false); // PC撮影後のプレビュー表示用
@@ -244,6 +244,10 @@ function Camera() {
 
   const handleUpload = async () => {
     if (!photoDataUrl || !accessToken) return;
+    if (!photoCount) {
+      alert('人数を選択してください。');
+      return;
+    }
     console.log('📸 選択された人数:', photoCount);
     try {
       setIsUploading(true);
@@ -301,10 +305,11 @@ function Camera() {
               <label className="block text-sm font-bold mb-2">人数を選択：</label>
               <select
                 value={photoCount}
-                onChange={(e) => setPhotoCount(Number(e.target.value))}
+                onChange={(e) => setPhotoCount(e.target.value ? Number(e.target.value) : '')}
                 className="border rounded px-4 py-2 w-full"
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                <option value="" disabled>-- 人数を選択してください --</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(num => (
                   <option key={num} value={num}>{num}人</option>
                 ))}
               </select>
