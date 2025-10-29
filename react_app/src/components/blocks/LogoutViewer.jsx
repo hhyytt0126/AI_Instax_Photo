@@ -2,9 +2,9 @@ import React from 'react';
 import { FolderOpen, LogOut, Bell } from 'lucide-react';
 
 export default function LogoutViewer({ token, onLogout, notificationCount, onOpenNotificationLog, notifications }) {
-  // 未購入(not purchased) の通知数を優先して表示。notifications が渡されていなければ従来の notificationCount を使用
+  // 未完了(not completed) の通知数を優先して表示。notifications が渡されていなければ従来の notificationCount を使用
   const incompleteCount = Array.isArray(notifications)
-    ? notifications.filter(n => !n.purchased).length
+    ? notifications.filter(n => !n.completed).length
     : notificationCount;
 
   return (
@@ -21,10 +21,20 @@ export default function LogoutViewer({ token, onLogout, notificationCount, onOpe
         </div>
         {token && (
           <div className="flex gap-2">
-            <button onClick={onOpenNotificationLog} className="btn btn-primary">
-              <Bell className="icon-small" />
-              <span>通知ログ ({incompleteCount})</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={onOpenNotificationLog}
+                className={`btn ${incompleteCount > 0 ? 'btn-primary' : 'bg-gray-500'}`}
+              >
+                <Bell className="icon-small" />
+                <span>通知ログ</span>
+              </button>
+              {incompleteCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                  {incompleteCount}
+                </span>
+              )}
+            </div>
             <button onClick={onLogout} className="btn btn-logout">
               <LogOut className="icon-small" />
               <span>ログアウト</span>
