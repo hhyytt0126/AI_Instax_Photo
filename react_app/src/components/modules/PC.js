@@ -41,6 +41,7 @@ export default function PC() {
   const [notifications, setNotifications] = useState([]);
   const [showNotificationLog, setShowNotificationLog] = useState(false);
   const [newNotification, setNewNotification] = useState(null);
+  const newNotificationTimeoutRef = useRef(null);
   const notificationSoundRef = useRef(null);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
 
@@ -92,8 +93,11 @@ export default function PC() {
       const notification = snapshot.val();
       const notificationId = snapshot.key;
 
+      console.log('onChildAdded fired. snapshot.key:', notificationId, 'notification.timestamp:', notification?.timestamp, 'startTime:', startTime);
+
       // 監視開始後の通知のみ処理（初回ロード時の古い通知を除外）
       if (notification.timestamp > startTime - 5000) {
+        // play sound if available
         if (notificationSoundRef.current && !isSoundPlaying) {
           notificationSoundRef.current.currentTime = 0;
           notificationSoundRef.current.play().catch(e => console.error("通知音の再生に失敗:", e));
@@ -103,8 +107,15 @@ export default function PC() {
           }, 1000); // 1秒間のクールダウン
         }
 
+        console.log('🔔 新着通知を受信 (will setNewNotification):', notificationId, notification);
 
-        console.log('🔔 新着通知を受信:', notification);
+        // clear any existing timeout that would clear the toast
+        if (newNotificationTimeoutRef.current) {
+          console.log('🔁 既存のトーストクリアタイムアウトをクリアします');
+          clearTimeout(newNotificationTimeoutRef.current);
+          newNotificationTimeoutRef.current = null;
+        }
+
         setNewNotification({
           id: notificationId,
           ...notification
@@ -113,8 +124,14 @@ export default function PC() {
         // ファイルリストを再取得
         fetchFiles(FOLDER_ID, true);
 
-        // 5秒後にトーストを非表示
-        setTimeout(() => setNewNotification(null), 5000);
+        // 5秒後にトーストを非表示（既存のタイマーは先にクリアされる）
+        newNotificationTimeoutRef.current = setTimeout(() => {
+          console.log('⌛ トーストタイムアウト: トーストを非表示にします', notificationId);
+          setNewNotification(null);
+          newNotificationTimeoutRef.current = null;
+        }, 5000);
+      } else {
+        console.log('⛔ 通知タイムスタンプが古いためスキップ:', notificationId, notification?.timestamp, 'startTimeThreshold:', startTime - 5000);
       }
     });
 
@@ -122,6 +139,10 @@ export default function PC() {
     return () => {
       unsubscribeValue();
       unsubscribeChild();
+      if (newNotificationTimeoutRef.current) {
+        clearTimeout(newNotificationTimeoutRef.current);
+        newNotificationTimeoutRef.current = null;
+      }
     };
   }, [token]);
 

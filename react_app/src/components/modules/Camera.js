@@ -24,6 +24,7 @@ function Camera() {
   const [folderName, setFolderName] = useState(null);
   const tokenClientRef = useRef(null); // useStateからuseRefに変更
   const [photoDataUrl, setPhotoDataUrl] = useState(null); // 写真データ保持用
+  const [isDragging, setIsDragging] = useState(false); // ドラッグ中のフィードバック
   const [isUploading, setIsUploading] = useState(false); // アップロード中か
   const [photoCount, setPhotoCount] = useState(''); // 人数選択用
   const [countdown, setCountdown] = useState(null); // PC撮影時のカウントダウン用
@@ -84,11 +85,11 @@ function Camera() {
 
   // アスペクト比の変更を監視してカメラを再起動
   useEffect(() => {
-      // カメラモーダルが表示されている場合のみ再起動する
-      if (showCameraModal) {
-          startCamera();
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // カメラモーダルが表示されている場合のみ再起動する
+    if (showCameraModal) {
+      startCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aspectRatio]);
 
   const handleLogin = () => {
@@ -169,6 +170,64 @@ function Camera() {
     }
   };
 
+  // ドラッグアンドドロップハンドラ
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const dt = e.dataTransfer;
+    let file = null;
+    if (dt && dt.files && dt.files.length > 0) {
+      file = dt.files[0];
+    } else if (dt && dt.items && dt.items.length > 0) {
+      const item = dt.items[0];
+      if (item.kind === 'file') file = item.getAsFile();
+    }
+
+    if (!file) {
+      console.log('ドロップされたファイルが見つかりません');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      console.log('画像ファイルではありません:', file.type);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      setImagePreviewUrl(dataUrl);
+      setPhotoDataUrl(dataUrl);
+      setFolderName(null);
+      console.log('📥 ドロップで画像を読み込みました');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 画像（photoDataUrl）が変更されたときに人数選択を初期値に戻す
+  useEffect(() => {
+    // photoDataUrl がセットされた（新しい画像が読み込まれた）ときに人数をリセット
+    if (photoDataUrl !== null) {
+      setPhotoCount('');
+      console.log('🔁 画像変更検知: 人数を初期値にリセットしました');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoDataUrl]);
+
   const handleStartCountdown = () => {
     if (countdown !== null) return; // カウントダウン中は実行しない
 
@@ -225,7 +284,7 @@ function Camera() {
       const notificationsRef = ref(database, 'notifications');
       const newNotificationRef = push(notificationsRef);
 
-      await set(newNotificationRef, {
+      const payload = {
         type: 'new_folder',
         folderId: folderId,
         folderName: folderName,
@@ -234,9 +293,12 @@ function Camera() {
         completed: false,
         read: false,
         purchased: false
-      });
+      };
 
-      console.log('通知送信成功:', { folderName, photoCount });
+      console.log('📤 送信する通知ペイロード:', payload, 'refKey:', newNotificationRef.key);
+      await set(newNotificationRef, payload);
+
+      console.log('✅ 通知送信成功:', { key: newNotificationRef.key, folderName, photoCount });
     } catch (error) {
       console.error('通知送信エラー:', error);
     }
@@ -288,13 +350,23 @@ function Camera() {
         )}
 
         <div className="flex justify-center w-full m-6">
-          <div className="flex justify-center items-center w-[500px] h-[500px] border-2 border-dashed border-gray-400 p-2">
-            {imagePreviewUrl && (
+          <div
+            className={`flex justify-center items-center w-[500px] h-[500px] border-2 border-dashed p-2 ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-400'}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {imagePreviewUrl ? (
               <img
                 src={imagePreviewUrl}
                 alt="preview"
                 className="max-w-full max-h-full object-contain"
               />
+            ) : (
+              <div className="text-center text-gray-500">
+                ここに画像をドロップしてください<br />または「写真を撮る」をクリック
+              </div>
             )}
           </div>
         </div>
