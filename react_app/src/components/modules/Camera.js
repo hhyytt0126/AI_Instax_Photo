@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from 'react-dom';
 import generateQRCode from "../utils/generateQRCode";
 import uploadPhoto from "../utils/uploadPhoto";
 import {
@@ -228,6 +229,30 @@ function Camera() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photoDataUrl]);
 
+  // dataURL をダウンロード可能なファイルに変換して保存するヘルパー
+  const downloadDataUrl = (dataUrl, filename = 'photo.jpg') => {
+    try {
+      const parts = dataUrl.split(',');
+      const meta = parts[0].match(/:(.*?);/);
+      const mime = meta ? meta[1] : 'image/jpeg';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8 = new Uint8Array(n);
+      while (n--) u8[n] = bstr.charCodeAt(n);
+      const blob = new Blob([u8], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('ダウンロードに失敗しました', e);
+    }
+  };
+
   const handleStartCountdown = () => {
     if (countdown !== null) return; // カウントダウン中は実行しない
 
@@ -328,15 +353,28 @@ function Camera() {
       if (newFolderName) {
         await sendNotification(subFolderId, newFolderName, photoCount);
       }
-
       setFolderName(newFolderName);
     } catch (err) {
       console.error("アップロードエラー:", err);
-      alert("アップロードに失敗しました");
+      alert("アップロードに失敗しました。端末に画像を保存します。");
+      if (photoDataUrl) {
+        const filename = `photo_${new Date().toISOString().replace(/[:.]/g, '')}.jpg`;
+        downloadDataUrl(photoDataUrl, filename);
+      }
     } finally {
       setIsUploading(false);
     }
   };
+
+  // disable page scroll while overlay is visible to avoid scroll bleed
+  useEffect(() => {
+    if (isUploading) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+    return undefined;
+  }, [isUploading]);
 
   return (
     <>
